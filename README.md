@@ -16,7 +16,9 @@ pip install moesifwsgi
 
 ## How to use
 
-In __Flask__, add middleware is simply wrap your wsgi_app with the Moesif middleware.
+### Flask
+
+Wrap your wsgi_app with the Moesif middleware.
 
 ```python
 from moesifwsgi import MoesifMiddleware
@@ -31,7 +33,8 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
 
-In __Bottle__, adding middelware is very similiar.
+## Bottle
+Wrap your bottle app with the Moesif middleware.
 
 ```python
 
@@ -46,7 +49,8 @@ moesif_settings = {
 bottle.run(app=MoesifMiddleware(app, moesif_settings))
 
 ```
-In __Pyramid__
+
+### Pyramid
 
 
 ```python
@@ -73,11 +77,10 @@ if __name__ == '__main__':
 
 ```
 
-If you are using a Framework that is build on top of WSGI, it should just work.
-Please read the documentation for that framework on how to add middlewares to
-your app.
+If you are using a framework that is built on top of WSGI, it should work just by adding the Moesif middleware.
+Please read the documentation for your specific framework on how to add middleware.
 
-## Setting options
+## Configuration options
 
 #### __`APPLICATION_ID`__
 (__required__), _string_, is obtained via your Moesif Account, this is required.

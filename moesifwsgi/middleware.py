@@ -174,7 +174,6 @@ class MoesifMiddleware(object):
                                       body=req_body,
                                       transfer_encoding=req_body_transfer_encoding)
 
-        print(event_req.to_dictionary())
         response_content = None
 
         try:
@@ -214,8 +213,6 @@ class MoesifMiddleware(object):
                                headers=rsp_headers,
                                body=rsp_body,
                                transfer_encoding=rsp_body_transfer_encoding)
-
-        print(event_rsp.to_dictionary())
 
         event_model = EventModel(request=event_req,
                                  response=event_rsp,

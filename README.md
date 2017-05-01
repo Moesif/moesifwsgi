@@ -66,7 +66,6 @@ if __name__ == '__main__':
     # configure your moesif settings
     moesif_settings = {
         'APPLICATION_ID': 'Your application id',
-        'DEBUG': True
         # ... other options see below.
     }
     # Put middleware
@@ -87,14 +86,16 @@ Please read the documentation for your specific framework on how to add middlewa
 (__required__), _string_, is obtained via your Moesif Account, this is required.
 
 #### __`SKIP`__
-(optional) _(app, environ) => boolean_, a function that takes a wsgi app and an environ, and returns true if you want to skip this particular event.
+(optional) _(app, environ) => boolean_, a function that takes a WSGI app and an environ,
+and returns true if you want to skip this particular event. The app is the original WSGI app instance, and the
+environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
 
 #### __`IDENTIFY_USER`__
-(optional, but highly recommended) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
+(optional, but highly recommended) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
 but different frameworks and your implementation might be very different, it would be helpful and much more accurate to provide this function.
 
 #### __`GET_SESSION_TOKEN`__
-(optional) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
+(optional) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
 
 #### __`MASK_EVENT_MODEL`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function than use the string based filter options: REQUEST_BODY_MASKS, REQUEST_HEADER_MASKS, RESPONSE_BODY_MASKS, & RESPONSE_HEADER_MASKS. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif Python API Documentation](https://www.moesif.com/docs/api?python).

@@ -41,17 +41,41 @@ app = bottle.Bottle()
 
 moesif_settings = {
     'APPLICATION_ID': 'Your application id',
-    'DEBUG': True
 }
 
 bottle.run(app=MoesifMiddleware(app, moesif_settings))
+
+```
+In __Pyramid__
+
+
+```python
+from pyramid.config import Configurator
+from moesifwsgi import MoesifMiddleware
+
+if __name__ == '__main__':
+    config = Configurator()
+    config.add_route('hello', '/')
+    config.scan()
+    app = config.make_wsgi_app()
+
+    # configure your moesif settings
+    moesif_settings = {
+        'APPLICATION_ID': 'Your application id',
+        'DEBUG': True
+        # ... other options see below.
+    }
+    # Put middleware
+    app = MoesifMiddleware(app, moesif_settings)
+
+    server = make_server('0.0.0.0', 8080, app)
+    server.serve_forever()
 
 ```
 
 If you are using a Framework that is build on top of WSGI, it should just work.
 Please read the documentation for that framework on how to add middlewares to
 your app.
-
 
 ## Setting options
 
@@ -84,7 +108,7 @@ def identifyUser(app, environ):
     return "user_id_1"
 
 def should_skip(app, environ):
-    if "healthprobe" in req.path:
+    if "healthprobe" in environ.get('PATH_INFO', ''):
         return True
     else:
         return False

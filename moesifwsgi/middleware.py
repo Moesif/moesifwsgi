@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# from __future__ import print_function
-#, unicode_literals
-
 import logging
 import time
 import datetime
@@ -13,10 +10,6 @@ import base64
 import re
 import copy
 
-# Required to be loaded early to avoid hitting deadlock situation when processing requests
-# See http://code.google.com/p/modwsgi/wiki/ApplicationIssues (at the bottom, under Non Blocking Module Imports)
-# import _strptime
-
 import itertools
 from cStringIO import StringIO
 
@@ -26,7 +19,6 @@ from moesifapi.exceptions.api_exception import *
 from moesifapi.models import *
 
 from .http_response_catcher import HttpResponseCatcher
-
 
 class DataHolder(object):
     """Capture the data for a request-response."""
@@ -150,7 +142,6 @@ class MoesifMiddleware(object):
         req_body = None
         req_body_transfer_encoding = None
         try:
-            # print("about to serialize request body" + request.body)
             if self.DEBUG:
                 print("about to process request body" + data.request_body)
             if data.request_body:
@@ -322,7 +313,7 @@ class MoesifMiddleware(object):
         body = None
         if content_length:
             if content_length == '-1':
-                # This is a special case, where the content length is basically undetermined
+                # case where the content length is basically undetermined
                 body = environ['wsgi.input'].read(-1)
                 content_length = len(body)
             else:

@@ -62,7 +62,8 @@ your app.
 (optional) _(app, environ) => boolean_, a function that takes a wsgi app and an environ, and returns true if you want to skip this particular event.
 
 #### __`IDENTIFY_USER`__
-(optional) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif identify users automatically, and this middleware try to use the standard Django request.user.username, if your set up is very different from the standard implementations, it would be helpful to provide this function.
+(optional, but highly recommended) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
+but different frameworks and your implementation might be very different, it would be helpful and much more accurate to provide this function.
 
 #### __`GET_SESSION_TOKEN`__
 (optional) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.

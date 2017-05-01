@@ -70,6 +70,9 @@ your app.
 #### __`MASK_EVENT_MODEL`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function than use the string based filter options: REQUEST_BODY_MASKS, REQUEST_HEADER_MASKS, RESPONSE_BODY_MASKS, & RESPONSE_HEADER_MASKS. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif Python API Documentation](https://www.moesif.com/docs/api?python).
 
+#### __'DEBUG'__
+
+(optional) _boolean_, a flag to see debugging messages.
 
 ### Example:
 
@@ -107,6 +110,7 @@ moesif_settings = {
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 ```
+
 
 ## Other integrations
 

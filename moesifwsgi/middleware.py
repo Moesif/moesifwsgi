@@ -256,10 +256,9 @@ class MoesifMiddleware(object):
             if identify_user is not None:
                 username = identify_user(self.app, environ)
         except Exception as e:
-            print('got exception')
-            print(e)
             if self.DEBUG:
                 print("can not execute identify_user function, please check moesif settings.")
+                print(e)
         return username
 
 

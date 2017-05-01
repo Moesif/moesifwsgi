@@ -69,7 +69,7 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-    keywords='log analysis restful api development debug',
+    keywords='log analysis restful api development debug wsgi flask bottle http middleware',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().

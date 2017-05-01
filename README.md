@@ -108,7 +108,6 @@ but different frameworks and your implementation might be very different, it wou
 
 ```python
 def identifyUser(app, environ):
-    # if your setup do not use the standard request.user.username
     # return the user id here
     return "user_id_1"
 
@@ -118,10 +117,9 @@ def should_skip(app, environ):
     else:
         return False
 
-def get_token(app, environ):
-    # if your setup do not use the standard Django method for
-    # setting session tokens. do it here.
-    return "token"
+def get_session(app, environ):
+    # extract session id from environ.
+    return "session_id"
 
 def mask_event(eventmodel):
     # do something to remove sensitive fields

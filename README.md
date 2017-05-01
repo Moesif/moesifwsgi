@@ -33,7 +33,7 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
 
-## Bottle
+### Bottle
 Wrap your bottle app with the Moesif middleware.
 
 ```python
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     server.serve_forever()
 
 ```
-## Other WSGI frameworks
+### Other WSGI frameworks
 
 If you are using a framework that is built on top of WSGI, it should work just by adding the Moesif middleware.
 Please read the documentation for your specific framework on how to add middleware.

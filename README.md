@@ -1,8 +1,12 @@
 # Moesif Middleware for Python WSGI based Frameworks
 
-WSGI (Web Server Gateway Interface) is a standard (PEP 3333) that describes
+[WSGI (Web Server Gateway Interface)](https://wsgi.readthedocs.io/en/latest/)
+is a standard (PEP 3333) that describes
 how a web server communicates with web applications. Many Python Frameworks
-are build on top of WSGI, such as Flask, Bottle, etc.
+are build on top of WSGI, such as [Flask](http://flask.pocoo.org/),
+[Bottle](https://bottlepy.org/docs/dev/), [Pyramid](https://trypyramid.com/) etc.
+Moesif WSGI Middleware help APIs that are build on top of these Frameworks to
+easily integrate with [Moesif](https://www.moesif.com).
 
 ## How to install
 
@@ -12,9 +16,11 @@ pip install moesifwsgi
 
 ## How to use
 
-In Flask, add middleware is simply wrap your wsgi_app with the Moesif middleware.
+In __Flask__, add middleware is simply wrap your wsgi_app with the Moesif middleware.
 
 ```python
+from moesifwsgi import MoesifMiddleware
+
 moesif_settings = {
     'APPLICATION_ID': 'Your application id'
 }
@@ -25,9 +31,11 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
 
-In Bottle, adding middelware is very similiar.
+In __Bottle__, adding middelware is very similiar.
 
 ```python
+
+from moesifwsgi import MoesifMiddleware
 
 app = bottle.Bottle()
 
@@ -40,6 +48,10 @@ bottle.run(app=MoesifMiddleware(app, moesif_settings))
 
 ```
 
+If you are using a Framework that is build on top of WSGI, it should just work.
+Please read the documentation for that framework on how to add middlewares to
+your app.
+
 
 ## Setting options
 
@@ -47,13 +59,13 @@ bottle.run(app=MoesifMiddleware(app, moesif_settings))
 (__required__), _string_, is obtained via your Moesif Account, this is required.
 
 #### __`SKIP`__
-(optional) _(request, response) => boolean_, a function that takes a request and a response, and returns true if you want to skip this particular event.
+(optional) _(app, environ) => boolean_, a function that takes a wsgi app and an environ, and returns true if you want to skip this particular event.
 
 #### __`IDENTIFY_USER`__
-(optional) _(request, response) => string_, a function that takes a request and a response, and returns a string that is the user id used by your system. While Moesif identify users automatically, and this middleware try to use the standard Django request.user.username, if your set up is very different from the standard implementations, it would be helpful to provide this function.
+(optional) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif identify users automatically, and this middleware try to use the standard Django request.user.username, if your set up is very different from the standard implementations, it would be helpful to provide this function.
 
 #### __`GET_SESSION_TOKEN`__
-(optional) _(request, response) => string_, a function that takes a request and a response, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
+(optional) _(request, response) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
 
 #### __`MASK_EVENT_MODEL`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. Use this if you prefer to write your own mask function than use the string based filter options: REQUEST_BODY_MASKS, REQUEST_HEADER_MASKS, RESPONSE_BODY_MASKS, & RESPONSE_HEADER_MASKS. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif Python API Documentation](https://www.moesif.com/docs/api?python).

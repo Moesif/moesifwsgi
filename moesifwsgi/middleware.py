@@ -78,7 +78,6 @@ class MoesifMiddleware(object):
         if settings is None:
             raise Exception('Moesif Application ID is required in settings')
         self.settings = settings
-        print(settings)
 
         if settings.get('APPLICATION_ID', None):
             self.client = MoesifAPIClient(settings.get('APPLICATION_ID'))
@@ -139,8 +138,12 @@ class MoesifMiddleware(object):
             return response_chunks
         finally:
             #background_process()
-            sending_background_thread = threading.Thread(target=background_process)
-            sending_background_thread.start()
+            if not self.should_skip(environ):
+                sending_background_thread = threading.Thread(target=background_process)
+                sending_background_thread.start()
+            else:
+                if self.DEBUG:
+                    print('skipped')
 
 
     def process_data(self, data):
@@ -279,6 +282,20 @@ class MoesifMiddleware(object):
                 print("can not execute get_session function, please check moesif settings.")
                 print(e)
         return session_token
+
+
+    def should_skip(self, environ):
+        try:
+            skip_proc = self.settings.get("SKIP")
+            if skip_proc is not None:
+                return skip_proc(self.app, environ)
+            else:
+                return False
+        except:
+            if self.DEBUG:
+                print("error trying to execute skip function.")
+            return False
+        return False
 
 
     def request_url(self, environ):

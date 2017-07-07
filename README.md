@@ -33,6 +33,8 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
 
+For an example with Flask, see example in the `/examples/flask` folder of this repo.
+
 ### Bottle
 Wrap your bottle app with the Moesif middleware.
 
@@ -49,6 +51,8 @@ moesif_settings = {
 bottle.run(app=MoesifMiddleware(app, moesif_settings))
 
 ```
+
+For an example with Bottle, see example in the `/examples/bottle` folder of this repo.
 
 ### Pyramid
 

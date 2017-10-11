@@ -98,6 +98,11 @@ environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.htm
 (optional, but highly recommended) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
 but different frameworks and your implementation might be very different, it would be helpful and much more accurate to provide this function.
 
+#### __`GET_METADATA`__
+(optional) _(app, environ) => dictionary_, a function that takes an app and an environ, and
+returns a dictionary (must be able to be encoded into JSON). This allows your
+to associate this event with custom metadata. For example, you may want to save a VM instance_id, a trace_id, or a tenant_id with the request.
+
 #### __`GET_SESSION_TOKEN`__
 (optional) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
 
@@ -130,6 +135,9 @@ def mask_event(eventmodel):
     # be sure not to remove any required fields.
     return eventmodel
 
+def get_metadata(app, environ):
+    return { 'foo' : 'some data', 'bar' : 'another data', }
+
 moesif_settings = {
     'APPLICATION_ID': 'Your application id',
     'DEBUG': False,
@@ -137,6 +145,7 @@ moesif_settings = {
     'GET_SESSION_TOKEN': get_token,
     'SKIP': should_skip,
     'MASK_EVENT_MODEL': mask_event,
+    'GET_METADATA': get_metadata
 }
 
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)

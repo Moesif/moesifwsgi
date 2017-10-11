@@ -70,9 +70,20 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
+def get_user(app, environ):
+    print("get user id is called")
+    return 'user1'
+
+def get_metadata(app, environ):
+    print("get metadata is called")
+    return { 'foo' : 'wsgi with flask', 'bar' : 'wsgi metadata', }
+
 moesif_settings = {
-    'APPLICATION_ID': 'your application id',
-    'DEBUG': False,
+    'APPLICATION_ID': 'your application id goes here',
+    'GET_METADATA': get_metadata,
+    'IDENTIFY_USER': get_user,
+    'DEBUG': False
 }
+
 
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)

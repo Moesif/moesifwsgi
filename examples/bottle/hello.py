@@ -45,9 +45,18 @@ def get_latin():
     response.content_type = 'text/html; charset=latin9'
     return u'ISO-8859-15 is also known as latin9.'
 
+def get_user(app, environ):
+    print("get user id is called")
+    return 'abc'
+
+def get_metadata(app, environ):
+    print("get metadata is called")
+    return { 'foo' : 'some data', 'bar' : 'another data', }
 
 moesif_settings = {
-    'APPLICATION_ID': 'your application id',
+    'APPLICATION_ID': 'your application id goes here',
+    'GET_METADATA': get_metadata,
+    'IDENTIFY_USER': get_user,
     'DEBUG': False
 }
 

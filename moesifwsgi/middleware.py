@@ -22,12 +22,13 @@ from .http_response_catcher import HttpResponseCatcher
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, id, method, url, ip, user_id, session_token, request_headers, content_length, request_body):
+    def __init__(self, id, method, url, ip, user_id, metadata, session_token, request_headers, content_length, request_body):
         self.request_id = id
         self.method = method
         self.url = url
         self.ip_address = ip
         self.user_id = user_id
+        self.metadata = metadata
         self.session_token = session_token
         self.request_headers = request_headers
         self.content_length = content_length
@@ -97,6 +98,7 @@ class MoesifMiddleware(object):
                         self.request_url(environ),
                         self.get_client_address(environ),
                         self.get_user_id(environ),
+                        self.get_metadata(environ),
                         self.get_session_token(environ),
                         [(k, v) for k,v in self.parse_request_headers(environ)],
                         *self.request_body(environ)
@@ -208,7 +210,8 @@ class MoesifMiddleware(object):
         event_model = EventModel(request=event_req,
                                  response=event_rsp,
                                  user_id=data.user_id,
-                                 session_token=data.session_token)
+                                 session_token=data.session_token,
+                                 metadata=data.metadata)
 
         try:
             mask_event_model = self.settings.get("MASK_EVENT_MODEL")
@@ -252,6 +255,17 @@ class MoesifMiddleware(object):
                 print(e)
         return username
 
+    def get_metadata(self, environ):
+        metadata = None
+        try:
+            get_meta = self.settings.get("GET_METADATA")
+            if get_meta is not None:
+                metadata = get_meta(self.app, environ)
+        except Exception as e:
+            if self.DEBUG:
+                print("can not execute GET_METADATA function, please check moesif settings.")
+                print(e)
+        return metadata
 
     def get_session_token(self, environ):
         session_token = None

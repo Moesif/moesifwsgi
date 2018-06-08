@@ -16,14 +16,14 @@ that are based on WSGI.
 The example is under `/examples/flask`
 
 moesifwsgi's [github readme](https://github.com/Moesif/moesifwsgi) already documented
-the steps for setup Moesif. But this is instructions to runt this example.
+the steps for setup Moesif. But this is instructions to run this example.
 
 1. Optional: Setup [virtual env](https://virtualenv.pypa.io/en/stable/) if needed.
 Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
 
 2. Install moesifwsgi in the environment by `pip install moesifwsgi`
 
-3. Install Rest Framework by, `pip install Flask`
+3. Install Flask Framework by, `pip install Flask`
 
 4. Be sure to edit the `examples/flask/hello.py` to include your own application id.
 

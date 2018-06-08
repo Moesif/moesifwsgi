@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import logging
 import time
 import datetime
 import threading
-import copy
 import json
 import base64
 import re
-import copy
 
 import itertools
 from cStringIO import StringIO
@@ -37,7 +34,7 @@ class DataHolder(object):
         self.response_headers = None
         self.response_chunks = None
         self.response_body_data = None
-        self.request_time = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        self.request_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.start_at = time.time()
 
     def capture_response_status(self, status, response_headers):
@@ -51,7 +48,7 @@ class DataHolder(object):
             self.response_body_data = self.response_body_data + body_data
 
     def finish_response(self, response_chunks):
-        self.response_time = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        self.response_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.response_chunks = response_chunks
         new_response_chunks = []
         stored_response_chunks = []

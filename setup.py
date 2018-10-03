@@ -28,13 +28,13 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.1.3',
+    version='1.1.4',
 
     description='Moesif Middleware for Python WSGI based flatforms (Flask, Bottle & Others)',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://www.moesif.com/developer-documentation',
+    url='https://www.moesif.com/docs/server-integration/python-wsgi/',
 
     # Author details
     author='Moesif, Inc',

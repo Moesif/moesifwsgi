@@ -16,6 +16,7 @@ from moesifapi.exceptions.api_exception import *
 from moesifapi.models import *
 
 from .http_response_catcher import HttpResponseCatcher
+from moesifpythonrequest.start_capture.start_capture import StartCapture
 
 class DataHolder(object):
     """Capture the data for a request-response."""
@@ -80,6 +81,14 @@ class MoesifMiddleware(object):
             Configuration.BASE_URI = settings.get('LOCAL_MOESIF_BASEURL', 'https://api.moesif.net')
 
         self.DEBUG = settings.get('DEBUG', False)
+        if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
+            try:
+                if self.DEBUG:
+                    print('Start capturing outgoing requests')
+                # Start capturing outgoing requests
+                StartCapture().start_capture_outgoing(settings)
+            except:
+                print('Error while starting to capture the outgoing events')
         self.api_version = settings.get('API_VERSION')
         self.api_client = self.client.api
 

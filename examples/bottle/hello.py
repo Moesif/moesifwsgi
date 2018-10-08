@@ -53,10 +53,16 @@ def get_metadata(app, environ):
     print("get metadata is called")
     return { 'foo' : 'some data', 'bar' : 'another data', }
 
+def get_metadata_outgoing(req, res):
+    print("get metadata outgoing is called")
+    return { 'foo' : 'wsgi with flask', 'bar' : 'wsgi metadata outgoing', }
+
 moesif_settings = {
     'APPLICATION_ID': 'your application id goes here',
     'GET_METADATA': get_metadata,
+    'GET_METADATA_OUTGOING': get_metadata_outgoing,
     'IDENTIFY_USER': get_user,
+    'CAPTURE_OUTGOING_REQUESTS': False,
     'DEBUG': False
 }
 

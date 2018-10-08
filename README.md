@@ -1,5 +1,11 @@
 # Moesif Middleware for Python WSGI based Frameworks
 
+WSGI middleware to capture _incoming_ or _outgoing_ API calls and send to the Moesif API Analytics platform.
+
+[Source Code on GitHub](https://github.com/moesif/moesifwsgi)
+
+[Package on PyPI](https://pypi.python.org/pypi/moesifwsgi)
+
 [WSGI (Web Server Gateway Interface)](https://wsgi.readthedocs.io/en/latest/)
 is a standard (PEP 3333) that describes
 how a web server communicates with web applications. Many Python Frameworks

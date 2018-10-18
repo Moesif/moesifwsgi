@@ -171,13 +171,40 @@ moesif_settings = {
     'GET_SESSION_TOKEN': get_token,
     'SKIP': should_skip,
     'MASK_EVENT_MODEL': mask_event,
-    'GET_METADATA': get_metadata
+    'GET_METADATA': get_metadata,
+    'CAPTURE_OUTGOING_REQUESTS': False
 }
 
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 ```
 
+## Update User
+
+### update_user method
+A method is attached to the moesif WSGI middleware object to update the users profile or metadata.
+The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+
+```python
+update_user = MoesifMiddleware(app, moesif_settings).update_user({
+        'user_id': 'test',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    })
+```
+
+### update_users_batch method
+A method is attached to the moesif WSGI middleware object to update the users profile or metadata in batch.
+The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
+
+```python
+update_users_batch = MoesifMiddleware(app, moesif_settings).update_users_batch([UserModel.from_dictionary({
+        'user_id': 'test',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    }), UserModel.from_dictionary({
+        'user_id': 'abc_user',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    })])
+```
 
 ## Other integrations
 

@@ -1,10 +1,15 @@
 # Moesif Middleware for Python WSGI based Frameworks
 
-WSGI middleware to capture _incoming_ or _outgoing_ API calls and send to the Moesif API Analytics platform.
+[![Built For][ico-built-for]][link-built-for]
+[![Latest Version][ico-version]][link-package]
+[![Language Versions][ico-language]][link-language]
+[![Software License][ico-license]][link-license]
+[![Source Code][ico-source]][link-source]
+
+WSGI middleware to capture _incoming_ or _outgoing_ API calls and send to the Moesif AI-powered API Analytics platform.
+Supports Python Frameworks built on WSGI such as Flask, Bottle, and Pyramid.
 
 [Source Code on GitHub](https://github.com/moesif/moesifwsgi)
-
-[Package on PyPI](https://pypi.python.org/pypi/moesifwsgi)
 
 [WSGI (Web Server Gateway Interface)](https://wsgi.readthedocs.io/en/latest/)
 is a standard (PEP 3333) that describes
@@ -209,3 +214,15 @@ update_users_batch = MoesifMiddleware(app, moesif_settings).update_users_batch([
 ## Other integrations
 
 To view more more documentation on integration options, please visit __[the Integration Options Documentation](https://www.moesif.com/docs/getting-started/integration-options/).__
+
+[ico-built-for]: https://img.shields.io/badge/built%20for-python%20wsgi-blue.svg
+[ico-version]: https://img.shields.io/pypi/v/moesifwsgi.svg
+[ico-language]: https://img.shields.io/pypi/pyversions/moesifwsgi.svg
+[ico-license]: https://img.shields.io/badge/License-Apache%202.0-green.svg
+[ico-source]: https://img.shields.io/github/last-commit/moesif/moesifwsgi.svg?style=social
+
+[link-built-for]: https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface
+[link-package]: https://pypi.python.org/pypi/moesifwsgi
+[link-language]: https://pypi.python.org/pypi/moesifwsgi
+[link-license]: https://raw.githubusercontent.com/Moesif/moesifwsgi/master/LICENSE
+[link-source]: https://github.com/Moesif/moesifwsgi

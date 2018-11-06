@@ -6,6 +6,7 @@ import threading
 import json
 import base64
 import re
+import random
 
 import itertools
 from cStringIO import StringIO
@@ -141,8 +142,12 @@ class MoesifMiddleware(object):
         finally:
             #background_process()
             if not self.should_skip(environ):
-                sending_background_thread = threading.Thread(target=background_process)
-                sending_background_thread.start()
+                sampling_percentage = float(self.settings.get("SAMPLING_PERCENTAGE", 100))
+                random_percentage = random.random() * 100
+
+                if sampling_percentage >= random_percentage:
+                    sending_background_thread = threading.Thread(target=background_process)
+                    sending_background_thread.start()
             else:
                 if self.DEBUG:
                     print('skipped')

@@ -9,7 +9,10 @@ import re
 import random
 
 import itertools
-from io import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from moesifapi.moesif_api_client import *
 from moesifapi.api_helper import *
@@ -36,7 +39,7 @@ class DataHolder(object):
         self.response_headers = None
         self.response_chunks = None
         self.response_body_data = None
-        self.request_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        self.request_time = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.start_at = time.time()
 
     def capture_response_status(self, status, response_headers):
@@ -50,7 +53,7 @@ class DataHolder(object):
             self.response_body_data = self.response_body_data + body_data
 
     def finish_response(self, response_chunks):
-        self.response_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        self.response_time = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.response_chunks = response_chunks
         new_response_chunks = []
         stored_response_chunks = []
@@ -65,7 +68,10 @@ class MoesifMiddleware(object):
     """WSGI Middleware for recording of request-response"""
     def __init__(self, app, settings):
         self.app = app
-        self.request_counter = itertools.count().__next__ # Threadsafe counter
+        try:
+            self.request_counter = itertools.count().next  # Threadsafe counter for Python 2
+        except AttributeError:
+            self.request_counter = itertools.count().__next__  # Threadsafe counter for Python 3
         self.ipv4 = r"^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$"
         self.ipv6 = r"^((?=.*::)(?!.*::.+::)(::)?([\dA-F]{1,4}:(:|\b)|){5}|([\dA-F]{1,4}:){6})((([\dA-F]{1,4}((?!\3)::|:\b|$))|(?!\2\3)){2}|(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4})$/i"
 
@@ -409,11 +415,18 @@ class MoesifMiddleware(object):
 
 
     def parse_request_headers(self, environ):
-        for cgi_var, value in environ.items():
-            if cgi_var in self._parse_headers_special:
-                yield self._parse_headers_special[cgi_var], value
-            elif cgi_var.startswith('HTTP_'):
-                yield cgi_var[5:].title().replace('_', '-'), value
+        try:
+            for cgi_var, value in environ.iteritems():
+                if cgi_var in self._parse_headers_special:
+                    yield self._parse_headers_special[cgi_var], value
+                elif cgi_var.startswith('HTTP_'):
+                    yield cgi_var[5:].title().replace('_', '-'), value
+        except AttributeError:
+            for cgi_var, value in environ.items():
+                if cgi_var in self._parse_headers_special:
+                    yield self._parse_headers_special[cgi_var], value
+                elif cgi_var.startswith('HTTP_'):
+                    yield cgi_var[5:].title().replace('_', '-'), value
 
 
     def request_body(self, environ):
@@ -427,7 +440,11 @@ class MoesifMiddleware(object):
             else:
                 content_length = int(content_length)
                 body = environ['wsgi.input'].read(content_length)
-            environ['wsgi.input'] = StringIO(body.decode('utf-8')) # reset request body for the nested app
+            try:
+                environ['wsgi.input'] = StringIO(body) # reset request body for the nested app Python2
+            except TypeError:
+                environ['wsgi.input'] = StringIO(body.decode('utf-8')) # reset request body for the nested app Python3
+                body = body.decode('utf-8')
         else:
             content_length = 0
         return content_length, body

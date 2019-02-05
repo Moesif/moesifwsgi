@@ -118,15 +118,10 @@ class MoesifMiddleware(object):
             if cached_config_etag:
                 if cached_config_etag in self.config_dict: del self.config_dict[cached_config_etag]
             self.config_dict[response_config_etag] = json.loads(config_api_response.raw_body)
-            try:
-                app_config = self.config_dict.get(response_config_etag)
-                if app_config is not None:
-                    sample_rate = app_config.get('sample_rate', 100)
-                    self.last_updated_time = datetime.datetime.utcnow()
-                else:
-                    self.last_updated_time = datetime.datetime.utcnow()
-            except:
-                self.last_updated_time = datetime.datetime.utcnow()
+            app_config = self.config_dict.get(response_config_etag)
+            if app_config is not None:
+                sample_rate = app_config.get('sample_rate', 100)
+            self.last_updated_time = datetime.datetime.utcnow()
         except:
             self.last_updated_time = datetime.datetime.utcnow()
         return sample_rate

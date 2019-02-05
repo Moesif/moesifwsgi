@@ -2,6 +2,7 @@
 
 import time
 import datetime
+from datetime import timedelta
 import threading
 import json
 import base64
@@ -105,6 +106,30 @@ class MoesifMiddleware(object):
         if self.DEBUG:
             response_catcher = HttpResponseCatcher()
             self.api_client.http_call_back = response_catcher
+        self.config_dict = {}
+        self.sampling_percentage = self.get_config(None)
+
+    def get_config(self,cached_config_etag):
+        """Get Config"""
+        sample_rate = 100
+        try:
+            config_api_response = self.api_client.get_app_config()
+            response_config_etag = config_api_response.headers.get("X-Moesif-Config-ETag")
+            if cached_config_etag:
+                if cached_config_etag in self.config_dict: del self.config_dict[cached_config_etag]
+            self.config_dict[response_config_etag] = json.loads(config_api_response.raw_body)
+            try:
+                app_config = self.config_dict.get(response_config_etag)
+                if app_config is not None:
+                    sample_rate = app_config.get('sample_rate', 100)
+                    self.last_updated_time = datetime.datetime.utcnow()
+                else:
+                    self.last_updated_time = datetime.datetime.utcnow()
+            except:
+                self.last_updated_time = datetime.datetime.utcnow()
+        except:
+            self.last_updated_time = datetime.datetime.utcnow()
+        return sample_rate
 
     def __call__(self, environ, start_response):
         data_holder = DataHolder(
@@ -148,10 +173,9 @@ class MoesifMiddleware(object):
         finally:
             #background_process()
             if not self.should_skip(environ):
-                sampling_percentage = float(self.settings.get("SAMPLING_PERCENTAGE", 100))
                 random_percentage = random.random() * 100
 
-                if sampling_percentage >= random_percentage:
+                if self.sampling_percentage >= random_percentage:
                     sending_background_thread = threading.Thread(target=background_process)
                     sending_background_thread.start()
             else:
@@ -203,7 +227,7 @@ class MoesifMiddleware(object):
             try:
                 rsp_body = json.loads(response_content)
                 if self.DEBUG:
-                    print("jason parsed succesfully")
+                    print("json parsed succesfully")
             except:
                 if self.DEBUG:
                     print("could not json parse, so base64 encode")
@@ -244,7 +268,14 @@ class MoesifMiddleware(object):
             print("sending event to moesif")
             print(APIHelper.json_serialize(event_model))
         try:
-            self.api_client.create_event(event_model)
+            event_api_response = self.api_client.create_event(event_model)
+            cached_config_etag = next(iter(self.config_dict))
+            event_response_config_etag = event_api_response.get("X-Moesif-Config-ETag")
+
+            if event_response_config_etag is not None \
+                    and cached_config_etag != event_response_config_etag \
+                    and datetime.datetime.utcnow() > self.last_updated_time + timedelta(minutes=5):
+                self.sampling_percentage = self.get_config(cached_config_etag)
             if self.DEBUG:
                 print("sent done")
         except APIException as inst:

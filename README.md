@@ -120,7 +120,7 @@ to associate this event with custom metadata. For example, you may want to save 
 #### __`MASK_EVENT_MODEL`__
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif Python API Documentation](https://www.moesif.com/docs/api?python).
 
-#### __'DEBUG'__
+#### __`DEBUG`__
 
 (optional) _boolean_, a flag to see debugging messages.
 

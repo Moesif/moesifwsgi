@@ -8,6 +8,7 @@ import json
 import base64
 import re
 import random
+import uuid
 
 import itertools
 try:
@@ -25,7 +26,7 @@ from moesifpythonrequest.start_capture.start_capture import StartCapture
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, id, method, url, ip, user_id, metadata, session_token, request_headers, content_length, request_body):
+    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, metadata, session_token, request_headers, content_length, request_body):
         self.request_id = id
         self.method = method
         self.url = url
@@ -42,9 +43,23 @@ class DataHolder(object):
         self.response_body_data = None
         self.request_time = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.start_at = time.time()
+        self.transaction_id = None
+        if not capture_transaction_id:
+            req_trans_id = [value for key, value in request_headers if key == "X-Moesif-Transaction-Id"]
+            if req_trans_id:
+                self.transaction_id = req_trans_id[0]
+                if not self.transaction_id:
+                    self.transaction_id = str(uuid.uuid4())
+            else:
+                self.transaction_id = str(uuid.uuid4())
+            # Add transaction id to the request header
+            self.request_headers.append(("X-Moesif-Transaction-Id", self.transaction_id))
 
     def capture_response_status(self, status, response_headers):
         self.status = status
+        # Add transaction id to the response header
+        if self.transaction_id:
+            response_headers.append(("X-Moesif-Transaction-Id", self.transaction_id))
         self.response_headers = response_headers
 
     def capture_body_data(self, body_data):
@@ -128,6 +143,7 @@ class MoesifMiddleware(object):
 
     def __call__(self, environ, start_response):
         data_holder = DataHolder(
+                        self.settings.get('DISABLED_TRANSACTION_ID', False),
                         self.request_counter(),
                         environ['REQUEST_METHOD'],
                         self.request_url(environ),

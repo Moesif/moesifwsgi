@@ -302,7 +302,6 @@ class MoesifMiddleware(object):
 
     def getClientIpFromXForwardedFor(self, value):
         try:
-            value = value.encode('utf-8')
 
             if not value or value is None:
                 return None

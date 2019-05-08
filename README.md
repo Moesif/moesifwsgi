@@ -187,7 +187,7 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 ## Update User
 
 ### update_user method
-A method is attached to the moesif WSGI middleware object to update the users profile or metadata.
+A method is attached to the moesif WSGI middleware object to update the user profile or metadata.
 The metadata field can be any custom data you want to set on the user. The `user_id` field is required.
 
 ```python
@@ -207,6 +207,33 @@ update_users_batch = MoesifMiddleware(app, moesif_settings).update_users_batch([
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     }), UserModel.from_dictionary({
         'user_id': 'abc_user',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    })])
+```
+
+## Update Company
+
+### update_company method
+A method is attached to the moesif WSGI middleware object to update the company profile or metadata.
+The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+
+```python
+update_company = MoesifMiddleware(app, moesif_settings).update_company({
+        'company_id': '1',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    })
+```
+
+### update_companies_batch method
+A method is attached to the moesif WSGI middleware object to update the companies profile or metadata in batch.
+The metadata field can be any custom data you want to set on the company. The `company_id` field is required.
+
+```python
+update_companies_batch = MoesifMiddleware(app, moesif_settings).update_companies_batch([CompanyModel.from_dictionary({
+        'company_id': '1',
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+    }), CompanyModel.from_dictionary({
+        'company_id': '2',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })])
 ```

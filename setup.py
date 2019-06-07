@@ -13,15 +13,13 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-import register
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-register.run
 long_description = ''
-if path.exists('README.rst'):
-    with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+if path.exists('README.md'):
+    with open(path.join(here, 'README.md'), encoding='utf-8') as f:
         long_description = f.read()
 
 setup(
@@ -34,6 +32,7 @@ setup(
 
     description='Moesif Middleware for Python WSGI based flatforms (Flask, Bottle & Others)',
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     # The project's main homepage.
     url='https://www.moesif.com/docs/server-integration/python-wsgi/',

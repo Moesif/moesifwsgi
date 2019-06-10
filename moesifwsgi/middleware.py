@@ -227,8 +227,11 @@ class MoesifMiddleware(object):
         try:
             response_content = "".join(data.response_chunks)
         except:
-            if self.DEBUG:
-                print('try to join response chunks failed')
+            try:
+                response_content = b"".join(data.response_chunks)
+            except:
+                if self.DEBUG:
+                    print('try to join response chunks failed - ')
 
         rsp_body = None
         rsp_body_transfer_encoding = None

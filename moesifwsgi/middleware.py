@@ -27,12 +27,13 @@ from moesifpythonrequest.start_capture.start_capture import StartCapture
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, metadata, session_token, request_headers, content_length, request_body):
+    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, company_id, metadata, session_token, request_headers, content_length, request_body):
         self.request_id = id
         self.method = method
         self.url = url
         self.ip_address = ip
         self.user_id = user_id
+        self.company_id = company_id
         self.metadata = metadata
         self.session_token = session_token
         self.request_headers = request_headers
@@ -150,6 +151,7 @@ class MoesifMiddleware(object):
                         self.request_url(environ),
                         self.get_client_address(environ),
                         self.get_user_id(environ),
+                        self.get_company_id(environ),
                         self.get_metadata(environ),
                         self.get_session_token(environ),
                         [(k, v) for k,v in self.parse_request_headers(environ)],
@@ -268,6 +270,7 @@ class MoesifMiddleware(object):
         event_model = EventModel(request=event_req,
                                  response=event_rsp,
                                  user_id=data.user_id,
+                                 company_id=data.company_id,
                                  session_token=data.session_token,
                                  metadata=data.metadata)
 
@@ -401,6 +404,18 @@ class MoesifMiddleware(object):
                 print("can not execute identify_user function, please check moesif settings.")
                 print(e)
         return username
+
+    def get_company_id(self, environ):
+        company_id = None
+        try:
+            identify_company = self.settings.get("IDENTIFY_COMPANY")
+            if identify_company is not None:
+                company_id = identify_company(self.app, environ)
+        except Exception as e:
+            if self.DEBUG:
+                print("can not execute identify_company function, please check moesif settings.")
+                print(e)
+        return company_id
 
     def get_metadata(self, environ):
         metadata = None

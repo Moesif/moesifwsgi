@@ -231,6 +231,7 @@ The metadata field can be any custom data you want to set on the company. The `c
 ```python
 update_company = MoesifMiddleware(app, moesif_settings).update_company({
         'company_id': '1',
+        'company_domain': 'acmeinc.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })
 ```
@@ -242,9 +243,11 @@ The metadata field can be any custom data you want to set on the company. The `c
 ```python
 update_companies_batch = MoesifMiddleware(app, moesif_settings).update_companies_batch([CompanyModel.from_dictionary({
         'company_id': '1',
+        'company_domain': 'nowhere.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     }), CompanyModel.from_dictionary({
         'company_id': '2',
+        'company_domain': 'acmeinc.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })])
 ```

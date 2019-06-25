@@ -124,8 +124,10 @@ to associate this event with custom metadata. For example, you may want to save 
 (optional) _(EventModel) => EventModel_, a function that takes an EventModel and returns an EventModel with desired data removed. The return value must be a valid EventModel required by Moesif data ingestion API. For details regarding EventModel please see the [Moesif Python API Documentation](https://www.moesif.com/docs/api?python).
 
 #### __`DEBUG`__
-
 (optional) _boolean_, a flag to see debugging messages.
+
+#### __`LOG_BODY`__
+(optional) _boolean_, a flag to remove logging request and response body.
 
 #### __`CAPTURE_OUTGOING_REQUESTS`__
 _boolean_, Default False. Set to True to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [Requests](http://docs.python-requests.org/en/master/) library. The options below is applied to outgoing API calls.
@@ -149,6 +151,9 @@ to associate this event with custom metadata. For example, you may want to save 
 
 ##### __`GET_SESSION_TOKEN_OUTGOING`__
 (optional) _(req, res) => string_, a function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
+
+##### __`LOG_BODY_OUTGOING`__
+(optional) _boolean_, a flag to remove logging request and response body.
 
 ### Example:
 

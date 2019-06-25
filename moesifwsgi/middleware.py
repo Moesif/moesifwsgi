@@ -116,6 +116,7 @@ class MoesifMiddleware(object):
                 print('Error while starting to capture the outgoing events')
         self.api_version = settings.get('API_VERSION')
         self.api_client = self.client.api
+        self.LOG_BODY = self.settings.get('LOG_BODY', True)
 
         self.regex_http_          = re.compile(r'^HTTP_.+$')
         self.regex_content_type   = re.compile(r'^CONTENT_TYPE$')
@@ -200,15 +201,16 @@ class MoesifMiddleware(object):
     def process_data(self, data):
         req_body = None
         req_body_transfer_encoding = None
-        try:
-            if self.DEBUG:
-                print("about to process request body" + data.request_body)
-            if data.request_body:
-                req_body = json.loads(data.request_body)
-        except:
-            if data.request_body:
-                req_body = base64.standard_b64encode(data.request_body)
-                req_body_transfer_encoding = 'base64'
+        if self.LOG_BODY:
+            try:
+                if self.DEBUG:
+                    print("about to process request body" + data.request_body)
+                if data.request_body:
+                    req_body = json.loads(data.request_body)
+            except:
+                if data.request_body:
+                    req_body = base64.standard_b64encode(data.request_body)
+                    req_body_transfer_encoding = 'base64'
 
         req_headers = None
         if data.request_headers:
@@ -237,10 +239,10 @@ class MoesifMiddleware(object):
 
         rsp_body = None
         rsp_body_transfer_encoding = None
-        if self.DEBUG:
-            print("about to process response")
-            print(response_content)
-        if response_content:
+        if self.LOG_BODY and response_content:
+            if self.DEBUG:
+                print("about to process response")
+                print(response_content)
             try:
                 rsp_body = json.loads(response_content)
                 if self.DEBUG:

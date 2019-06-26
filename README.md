@@ -35,7 +35,9 @@ Wrap your wsgi_app with the Moesif middleware.
 from moesifwsgi import MoesifMiddleware
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your application id'
+    'APPLICATION_ID': 'Your application id',
+    'LOG_BODY': True,
+    # ... For other options see below.
 }
 
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
@@ -57,6 +59,8 @@ app = bottle.Bottle()
 
 moesif_settings = {
     'APPLICATION_ID': 'Your application id',
+    'LOG_BODY': True,
+    # ... For other options see below.
 }
 
 bottle.run(app=MoesifMiddleware(app, moesif_settings))
@@ -81,7 +85,8 @@ if __name__ == '__main__':
     # configure your moesif settings
     moesif_settings = {
         'APPLICATION_ID': 'Your application id',
-        # ... other options see below.
+        'LOG_BODY': True,
+        # ... For other options see below.
     }
     # Put middleware
     app = MoesifMiddleware(app, moesif_settings)

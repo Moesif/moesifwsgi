@@ -127,7 +127,7 @@ to associate this event with custom metadata. For example, you may want to save 
 (optional) _boolean_, a flag to see debugging messages.
 
 #### __`LOG_BODY`__
-(optional) _boolean_, a flag to remove logging request and response body.
+(optional) _boolean_, default True, Set to False to remove logging request and response body.
 
 #### __`CAPTURE_OUTGOING_REQUESTS`__
 _boolean_, Default False. Set to True to capture all outgoing API calls from your app to third parties like Stripe or to your own dependencies while using [Requests](http://docs.python-requests.org/en/master/) library. The options below is applied to outgoing API calls.
@@ -153,7 +153,7 @@ to associate this event with custom metadata. For example, you may want to save 
 (optional) _(req, res) => string_, a function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
 
 ##### __`LOG_BODY_OUTGOING`__
-(optional) _boolean_, a flag to remove logging request and response body.
+(optional) _boolean_, default True, Set to False to remove logging request and response body.
 
 ### Example:
 
@@ -187,6 +187,7 @@ def get_metadata(app, environ):
 moesif_settings = {
     'APPLICATION_ID': 'Your application id',
     'DEBUG': False,
+    'LOG_BODY': True,
     'IDENTIFY_USER': identifyUser,
     'IDENTIFY_COMPANY': identifyCompany,
     'GET_SESSION_TOKEN': get_token,

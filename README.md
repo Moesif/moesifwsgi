@@ -6,7 +6,7 @@
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-WSGI middleware to capture _incoming_ or _outgoing_ API calls and send to the Moesif AI-powered API Analytics platform.
+WSGI middleware that logs _incoming_ or _outgoing_ API calls and sends to [Moesif](https://www.moesif.com) for API analytics and log analysis.
 Supports Python Frameworks built on WSGI such as Flask, Bottle, and Pyramid.
 
 [Source Code on GitHub](https://github.com/moesif/moesifwsgi)
@@ -35,7 +35,7 @@ Wrap your wsgi_app with the Moesif middleware.
 from moesifwsgi import MoesifMiddleware
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your application id',
+    'APPLICATION_ID': 'Your Moesif Application id',
     'LOG_BODY': True,
     # ... For other options see below.
 }
@@ -44,7 +44,12 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 ```
 
-You can find your Application Id from [_Moesif Dashboard_](https://www.moesif.com/) -> _Top Right Menu_ -> _App Setup_
+Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moesif.com/).
+After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
+
+You can always find your Moesif Application Id at any time by logging 
+into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
+and then clicking _Installation_.
 
 For an example with Flask, see example in the `/examples/flask` folder of this repo.
 
@@ -58,7 +63,7 @@ from moesifwsgi import MoesifMiddleware
 app = bottle.Bottle()
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your application id',
+    'APPLICATION_ID': 'Your Moesif Application Id',
     'LOG_BODY': True,
     # ... For other options see below.
 }
@@ -84,7 +89,7 @@ if __name__ == '__main__':
 
     # configure your moesif settings
     moesif_settings = {
-        'APPLICATION_ID': 'Your application id',
+        'APPLICATION_ID': 'Your Moesif Application Id',
         'LOG_BODY': True,
         # ... For other options see below.
     }
@@ -190,7 +195,7 @@ def get_metadata(app, environ):
     return { 'foo' : 'some data', 'bar' : 'another data', }
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your application id',
+    'APPLICATION_ID': 'Your Moesif Application Id',
     'DEBUG': False,
     'LOG_BODY': True,
     'IDENTIFY_USER': identifyUser,

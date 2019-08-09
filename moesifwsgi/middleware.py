@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
-import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 import threading
 import json
 import base64
@@ -22,6 +21,8 @@ from moesifapi.exceptions.api_exception import *
 from moesifapi.models import *
 from .update_companies import Company
 from .update_users import User
+from .app_config import AppConfig
+from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
 
@@ -43,7 +44,7 @@ class DataHolder(object):
         self.response_headers = None
         self.response_chunks = None
         self.response_body_data = None
-        self.request_time = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        self.request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.start_at = time.time()
         self.transaction_id = None
         if not capture_transaction_id:
@@ -71,7 +72,7 @@ class DataHolder(object):
             self.response_body_data = self.response_body_data + body_data
 
     def finish_response(self, response_chunks):
-        self.response_time = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        self.response_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.response_chunks = response_chunks
         new_response_chunks = []
         stored_response_chunks = []
@@ -90,8 +91,6 @@ class MoesifMiddleware(object):
             self.request_counter = itertools.count().next  # Threadsafe counter for Python 2
         except AttributeError:
             self.request_counter = itertools.count().__next__  # Threadsafe counter for Python 3
-        self.ipv4 = r"^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$"
-        self.ipv6 = r"^((?=.*::)(?!.*::.+::)(::)?([\dA-F]{1,4}:(:|\b)|){5}|([\dA-F]{1,4}:){6})((([\dA-F]{1,4}((?!\3)::|:\b|$))|(?!\2\3)){2}|(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4})$/i"
 
         if settings is None:
             raise Exception('Moesif Application ID is required in settings')
@@ -124,25 +123,19 @@ class MoesifMiddleware(object):
         if self.DEBUG:
             response_catcher = HttpResponseCatcher()
             self.api_client.http_call_back = response_catcher
-        self.config_dict = {}
-        self.sampling_percentage = self.get_config(None)
-
-    def get_config(self,cached_config_etag):
-        """Get Config"""
-        sample_rate = 100
+        self.client_ip = ClientIp()
+        self.app_config = AppConfig()
+        self.config = self.app_config.get_config(self.api_client, self.DEBUG)
+        self.sampling_percentage = 100
+        self.last_updated_time = datetime.utcnow()
         try:
-            config_api_response = self.api_client.get_app_config()
-            response_config_etag = config_api_response.headers.get("X-Moesif-Config-ETag")
-            if cached_config_etag:
-                if cached_config_etag in self.config_dict: del self.config_dict[cached_config_etag]
-            self.config_dict[response_config_etag] = json.loads(config_api_response.raw_body)
-            app_config = self.config_dict.get(response_config_etag)
-            if app_config is not None:
-                sample_rate = app_config.get('sample_rate', 100)
-            self.last_updated_time = datetime.datetime.utcnow()
+            if self.config:
+                self.config_etag, self.sampling_percentage, self.last_updated_time = self.app_config.parse_configuration(
+                    self.config, self.DEBUG)
         except:
-            self.last_updated_time = datetime.datetime.utcnow()
-        return sample_rate
+            if self.DEBUG:
+                print('Error while parsing application configuration on initialization')
+
 
     def __call__(self, environ, start_response):
         data_holder = DataHolder(
@@ -150,7 +143,7 @@ class MoesifMiddleware(object):
                         self.request_counter(),
                         environ['REQUEST_METHOD'],
                         self.request_url(environ),
-                        self.get_client_address(environ),
+                        self.client_ip.get_client_address(environ),
                         self.get_user_id(environ),
                         self.get_company_id(environ),
                         self.get_metadata(environ),
@@ -190,6 +183,8 @@ class MoesifMiddleware(object):
             if not self.should_skip(environ):
                 random_percentage = random.random() * 100
 
+                self.sampling_percentage = self.app_config.get_sampling_percentage(self.config, self.get_user_id(environ),
+                                                                                   self.get_company_id(environ))
                 if self.sampling_percentage >= random_percentage:
                     sending_background_thread = threading.Thread(target=background_process)
                     sending_background_thread.start()
@@ -250,7 +245,7 @@ class MoesifMiddleware(object):
             except:
                 if self.DEBUG:
                     print("could not json parse, so base64 encode")
-                rsp_body = base64.standard_b64encode(response_content)
+                rsp_body = (base64.standard_b64encode(response_content)).decode(encoding='UTF-8')
                 rsp_body_transfer_encoding = 'base64'
                 if self.DEBUG:
                     print("base64 encoded body: " + rsp_body)
@@ -289,13 +284,19 @@ class MoesifMiddleware(object):
             print(APIHelper.json_serialize(event_model))
         try:
             event_api_response = self.api_client.create_event(event_model)
-            cached_config_etag = next(iter(self.config_dict))
             event_response_config_etag = event_api_response.get("X-Moesif-Config-ETag")
 
             if event_response_config_etag is not None \
-                    and cached_config_etag != event_response_config_etag \
-                    and datetime.datetime.utcnow() > self.last_updated_time + timedelta(minutes=5):
-                self.sampling_percentage = self.get_config(cached_config_etag)
+                    and self.config_etag is not None \
+                    and self.config_etag != event_response_config_etag \
+                    and datetime.utcnow() > self.last_updated_time + timedelta(minutes=5):
+                try:
+                    self.config = self.app_config.get_config(self.api_client, self.DEBUG)
+                    self.config_etag, self.sampling_percentage, self.last_updated_time = self.app_config.parse_configuration(
+                        self.config, self.DEBUG)
+                except:
+                    if self.DEBUG:
+                        print('Error while updating the application configuration')
             if self.DEBUG:
                 print("sent done")
         except APIException as inst:
@@ -304,96 +305,6 @@ class MoesifMiddleware(object):
             if self.DEBUG:
                 print("Error sending event to Moesif, with status code:")
                 print(inst.response_code)
-
-    def is_ip(self, value):
-        if not value is None:
-            return re.match(self.ipv4, value) or re.match(self.ipv6, value)
-
-    def getClientIpFromXForwardedFor(self, value):
-        try:
-
-            if not value or value is None:
-                return None
-
-            if not isinstance(value, str):
-                print("Expected a string, got -" + str(type(value)))
-            else:
-                # x-forwarded-for may return multiple IP addresses in the format:
-                # "client IP, proxy 1 IP, proxy 2 IP"
-                # Therefore, the right-most IP address is the IP address of the most recent proxy
-                # and the left-most IP address is the IP address of the originating client.
-                # source: http://docs.aws.amazon.com/elasticloadbalancing/latest/classic/x-forwarded-headers.html
-                # Azure Web App's also adds a port for some reason, so we'll only use the first part (the IP)
-                forwardedIps = []
-
-                for e in value.split(','):
-                    ip = e.strip()
-                    if ':' in ip:
-                        splitted = ip.split(':')
-                        if (len(splitted) == 2):
-                            forwardedIps.append(splitted[0])
-                    forwardedIps.append(ip)
-
-                # Sometimes IP addresses in this header can be 'unknown' (http://stackoverflow.com/a/11285650).
-                # Therefore taking the left-most IP address that is not unknown
-                # A Squid configuration directive can also set the value to "unknown" (http://www.squid-cache.org/Doc/config/forwarded_for/)
-                return next(item for item in forwardedIps if self.is_ip(item))
-        except StopIteration:
-            return value.encode('utf-8')
-
-    def get_client_address(self, environ):
-        try:
-            # Standard headers used by Amazon EC2, Heroku, and others.
-            if 'HTTP_X_CLIENT_IP' in environ:
-                if self.is_ip(environ['HTTP_X_CLIENT_IP']):
-                    return environ['HTTP_X_CLIENT_IP']
-
-            # Load-balancers (AWS ELB) or proxies.
-            if 'HTTP_X_FORWARDED_FOR' in environ:
-                xForwardedFor = self.getClientIpFromXForwardedFor(environ['HTTP_X_FORWARDED_FOR'])
-                if self.is_ip(xForwardedFor):
-                    return xForwardedFor
-
-            # Cloudflare.
-            # @see https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-Cloudflare-handle-HTTP-Request-headers-
-            # CF-Connecting-IP - applied to every request to the origin.
-            if 'HTTP_CF_CONNECTING_IP' in environ:
-                if self.is_ip(environ['HTTP_CF_CONNECTING_IP']):
-                    return environ['HTTP_CF_CONNECTING_IP']
-
-            # Akamai and Cloudflare: True-Client-IP.
-            if 'HTTP_TRUE_CLIENT_IP' in environ:
-                if self.is_ip(environ['HTTP_TRUE_CLIENT_IP']):
-                    return environ['HTTP_TRUE_CLIENT_IP']
-
-            # Default nginx proxy/fcgi; alternative to x-forwarded-for, used by some proxies.
-            if 'HTTP_X_REAL_IP' in environ:
-                if self.is_ip(environ['HTTP_X_REAL_IP']):
-                    return environ['HTTP_X_REAL_IP']
-
-            # (Rackspace LB and Riverbed's Stingray)
-            # http://www.rackspace.com/knowledge_center/article/controlling-access-to-linux-cloud-sites-based-on-the-client-ip-address
-            # https://splash.riverbed.com/docs/DOC-1926
-            if 'HTTP_X_CLUSTER_CLIENT_IP' in environ:
-                if self.is_ip(environ['HTTP_X_CLUSTER_CLIENT_IP']):
-                    return environ['HTTP_X_CLUSTER_CLIENT_IP']
-
-            if 'HTTP_X_FORWARDED' in environ:
-                if self.is_ip(environ['HTTP_X_FORWARDED']):
-                    return environ['HTTP_X_FORWARDED']
-
-            if 'HTTP_FORWARDED_FOR' in environ:
-                if self.is_ip(environ['HTTP_FORWARDED_FOR']):
-                    return environ['HTTP_FORWARDED_FOR']
-
-            if 'HTTP_FORWARDED' in environ:
-                if self.is_ip(environ['HTTP_FORWARDED']):
-                    return environ['HTTP_FORWARDED']
-
-            return environ['REMOTE_ADDR']
-        except KeyError:
-            return environ['REMOTE_ADDR']
-
 
     def get_user_id(self, environ):
         username = None

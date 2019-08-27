@@ -170,11 +170,11 @@ to associate this event with custom metadata. For example, you may want to save 
 ```python
 def identifyUser(app, environ):
     # return the user id here
-    return "user_id_1"
+    return "my_user_id"
 
 def identifyCompany(app, environ):
     # return the company id here
-    return "12345"
+    return "my_company_id"
 
 def should_skip(app, environ):
     if "healthprobe" in environ.get('PATH_INFO', ''):
@@ -219,7 +219,8 @@ The metadata field can be any custom data you want to set on the user. The `user
 
 ```python
 update_user = MoesifMiddleware(app, moesif_settings).update_user({
-        'user_id': 'test',
+        'user_id': '12345',
+        'company_id': '67890',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })
 ```
@@ -230,10 +231,12 @@ The metadata field can be any custom data you want to set on the user. The `user
 
 ```python
 update_users_batch = MoesifMiddleware(app, moesif_settings).update_users_batch([UserModel.from_dictionary({
-        'user_id': 'test',
+        'user_id': '12345',
+        'company_id': '67890',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     }), UserModel.from_dictionary({
-        'user_id': 'abc_user',
+        'user_id': '1234',
+        'company_id': '6789',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })])
 ```
@@ -246,7 +249,7 @@ The metadata field can be any custom data you want to set on the company. The `c
 
 ```python
 update_company = MoesifMiddleware(app, moesif_settings).update_company({
-        'company_id': '1',
+        'company_id': '12345',
         'company_domain': 'acmeinc.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })
@@ -258,11 +261,11 @@ The metadata field can be any custom data you want to set on the company. The `c
 
 ```python
 update_companies_batch = MoesifMiddleware(app, moesif_settings).update_companies_batch([CompanyModel.from_dictionary({
-        'company_id': '1',
+        'company_id': '12345',
         'company_domain': 'nowhere.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     }), CompanyModel.from_dictionary({
-        'company_id': '2',
+        'company_id': '67890',
         'company_domain': 'acmeinc.com',
         'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
     })])
@@ -270,7 +273,7 @@ update_companies_batch = MoesifMiddleware(app, moesif_settings).update_companies
 
 ## Other integrations
 
-To view more more documentation on integration options, please visit __[the Integration Options Documentation](https://www.moesif.com/docs/getting-started/integration-options/).__
+To view more documentation on integration options, please visit __[the Integration Options Documentation](https://www.moesif.com/docs/getting-started/integration-options/).__
 
 [ico-built-for]: https://img.shields.io/badge/built%20for-python%20wsgi-blue.svg
 [ico-version]: https://img.shields.io/pypi/v/moesifwsgi.svg

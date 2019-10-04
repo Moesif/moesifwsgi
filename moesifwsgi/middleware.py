@@ -8,7 +8,7 @@ import base64
 import re
 import random
 import uuid
-
+from io import BytesIO
 import itertools
 try:
     from cStringIO import StringIO
@@ -28,7 +28,7 @@ from moesifpythonrequest.start_capture.start_capture import StartCapture
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, company_id, metadata, session_token, request_headers, content_length, request_body):
+    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, company_id, metadata, session_token, request_headers, content_length, request_body, transfer_encoding):
         self.request_id = id
         self.method = method
         self.url = url
@@ -40,6 +40,7 @@ class DataHolder(object):
         self.request_headers = request_headers
         self.content_length = content_length
         self.request_body = request_body
+        self.transfer_encoding = transfer_encoding
         self.status = -1
         self.response_headers = None
         self.response_chunks = None
@@ -197,15 +198,8 @@ class MoesifMiddleware(object):
         req_body = None
         req_body_transfer_encoding = None
         if self.LOG_BODY:
-            try:
-                if self.DEBUG:
-                    print("about to process request body" + data.request_body)
-                if data.request_body:
-                    req_body = json.loads(data.request_body)
-            except:
-                if data.request_body:
-                    req_body = base64.standard_b64encode(data.request_body)
-                    req_body_transfer_encoding = 'base64'
+            req_body = data.request_body
+            req_body_transfer_encoding = data.transfer_encoding
 
         req_headers = None
         if data.request_headers:
@@ -408,6 +402,8 @@ class MoesifMiddleware(object):
     def request_body(self, environ):
         content_length = environ.get('CONTENT_LENGTH')
         body = None
+        encoded_body = None
+        transfer_encoding = None
         if content_length:
             if content_length == '-1':
                 # case where the content length is basically undetermined
@@ -416,14 +412,22 @@ class MoesifMiddleware(object):
             else:
                 content_length = int(content_length)
                 body = environ['wsgi.input'].read(content_length)
-            try:
+
+            if isinstance(body, str):
                 environ['wsgi.input'] = StringIO(body) # reset request body for the nested app Python2
-            except TypeError:
-                environ['wsgi.input'] = StringIO(body.decode('utf-8')) # reset request body for the nested app Python3
-                body = body.decode('utf-8')
+                try:
+                    encoded_body = json.loads(body)
+                    transfer_encoding = 'json'
+                except:
+                    encoded_body = base64.standard_b64encode(body.encode()).decode(encoding="UTF-8")
+                    transfer_encoding = 'base64'
+            else:
+                environ['wsgi.input'] = BytesIO(body) # reset request body for the nested app Python3
+                encoded_body = base64.standard_b64encode(body).decode(encoding="UTF-8")
+                transfer_encoding = 'base64'
         else:
             content_length = 0
-        return content_length, body
+        return content_length, encoded_body, transfer_encoding
 
     def update_user(self, user_profile):
         User().update_user(user_profile, self.api_client, self.DEBUG)

@@ -56,3 +56,32 @@ Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
 
 To verify: send few request to the local server such as 'http://localhost:6080/hello' and
 check in your moesif account that events are captured.
+
+
+## Falcon Example:
+
+The example is under `examples/falcon`
+
+1. Optional: Setup [virtual env](https://virtualenv.pypa.io/en/stable/).
+Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
+
+2. Install moesifwsgi in the environment by `pip install moesifwsgi`
+
+3. Install Falcon web frame-work `pip install falcon`
+
+4. Install Gunicorn `pip install gunicorn`
+
+5. Install Falcon multipart Middleware `pip install falcon-multipart`
+
+6. Be sure to edit the `examples/falcon/hello.py` to include your own application id.
+
+```python
+app = MoesifMiddleware(app, {
+    'APPLICATION_ID': 'Your Moesif Application Id',
+})
+```
+
+7. Inside, `examples/falcon/` folder. Start the server `gunicorn hello:app`
+
+To verify: send few request to the local server such as 'http://localhost:8000/hello' and
+check in your moesif account that events are captured.

@@ -8,7 +8,7 @@ import base64
 import re
 import random
 import uuid
-
+from io import BytesIO
 import itertools
 try:
     from cStringIO import StringIO
@@ -198,13 +198,15 @@ class MoesifMiddleware(object):
         req_body_transfer_encoding = None
         if self.LOG_BODY:
             try:
-                if self.DEBUG:
-                    print("about to process request body" + data.request_body)
                 if data.request_body:
+                    if self.DEBUG:
+                        print("about to process request body" + data.request_body)
                     req_body = json.loads(data.request_body)
             except:
                 if data.request_body:
-                    req_body = base64.standard_b64encode(data.request_body)
+                    if self.DEBUG:
+                        print("Trying to Base64 encoded request body ")
+                    req_body = base64.standard_b64encode(data.request_body.encode()).decode(encoding="UTF-8")
                     req_body_transfer_encoding = 'base64'
 
         req_headers = None
@@ -416,10 +418,11 @@ class MoesifMiddleware(object):
             else:
                 content_length = int(content_length)
                 body = environ['wsgi.input'].read(content_length)
-            try:
+
+            if isinstance(body, str):
                 environ['wsgi.input'] = StringIO(body) # reset request body for the nested app Python2
-            except TypeError:
-                environ['wsgi.input'] = StringIO(body.decode('utf-8')) # reset request body for the nested app Python3
+            else:
+                environ['wsgi.input'] = BytesIO(body) # reset request body for the nested app Python3
                 body = body.decode('utf-8')
         else:
             content_length = 0

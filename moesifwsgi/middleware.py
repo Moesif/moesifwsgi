@@ -419,8 +419,12 @@ class MoesifMiddleware(object):
                     encoded_body = json.loads(body)
                     transfer_encoding = 'json'
                 except:
-                    encoded_body = base64.standard_b64encode(body.encode()).decode(encoding="UTF-8")
-                    transfer_encoding = 'base64'
+                    try:
+                        encoded_body = base64.standard_b64encode(body.encode()).decode(encoding="UTF-8")
+                        transfer_encoding = 'base64'
+                    except:
+                        encoded_body = base64.standard_b64encode(body).decode(encoding="UTF-8")
+                        transfer_encoding = 'base64'
             else:
                 environ['wsgi.input'] = BytesIO(body) # reset request body for the nested app Python3
                 encoded_body = base64.standard_b64encode(body).decode(encoding="UTF-8")

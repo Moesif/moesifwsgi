@@ -221,7 +221,8 @@ The metadata field can be any custom data you want to set on the user. The `user
 update_user = MoesifMiddleware(app, moesif_settings).update_user({
         'user_id': '12345',
         'company_id': '67890',
-        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'},
+        'campaign': {'utm_source': 'Newsletter', 'utm_medium': 'Email'}
     })
 ```
 
@@ -251,7 +252,8 @@ The metadata field can be any custom data you want to set on the company. The `c
 update_company = MoesifMiddleware(app, moesif_settings).update_company({
         'company_id': '12345',
         'company_domain': 'acmeinc.com',
-        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'}
+        'metadata': {'email': 'abc@email.com', 'name': 'abcde', 'image': '123'},
+        'campaign': {'utm_source': 'Adwords', 'utm_medium': 'Twitter'}
     })
 ```
 

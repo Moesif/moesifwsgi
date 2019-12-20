@@ -10,6 +10,7 @@ import random
 import uuid
 from io import BytesIO
 import itertools
+import math
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -263,7 +264,8 @@ class MoesifMiddleware(object):
                                  user_id=data.user_id,
                                  company_id=data.company_id,
                                  session_token=data.session_token,
-                                 metadata=data.metadata)
+                                 metadata=data.metadata,
+                                 direction="Incoming")
 
         try:
             mask_event_model = self.settings.get("MASK_EVENT_MODEL")
@@ -277,6 +279,7 @@ class MoesifMiddleware(object):
             print("sending event to moesif")
             print(APIHelper.json_serialize(event_model))
         try:
+            event_model.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)
             event_api_response = self.api_client.create_event(event_model)
             event_response_config_etag = event_api_response.get("X-Moesif-Config-ETag")
 
@@ -292,7 +295,7 @@ class MoesifMiddleware(object):
                     if self.DEBUG:
                         print('Error while updating the application configuration')
             if self.DEBUG:
-                print("sent done")
+                print("Event sent successfully")
         except APIException as inst:
             if 401 <= inst.response_code <= 403:
                 print("Unauthorized access sending event to Moesif. Please check your Appplication Id.")

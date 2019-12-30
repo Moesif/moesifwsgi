@@ -3,25 +3,44 @@ from flask import Flask, jsonify, abort, make_response, request
 
 app = Flask(__name__)
 
-def get_user(app, environ):
-    print("get user id is called")
-    return 'user1'
+def identify_user(app, environ):
+    return '12345'
+
+def identify_company(app, environ):
+    return '67890'
+
+def get_token(app, environ):
+    # If you don't want to use the standard WSGI session token,
+    # add your custom code that returns a string for session/API token
+    return "XXXXXXXXXXXXXX"
+
+def should_skip(app, environ):
+    # Your custom code that returns true to skip logging
+    return "health/probe" in environ.get('PATH_INFO', '')
 
 def get_metadata(app, environ):
-    print("get metadata is called")
-    return { 'foo' : 'wsgi with flask', 'bar' : 'wsgi metadata', }
+    return {
+        'datacenter': 'westus',
+        'deployment_version': 'v1.2.3',
+    }
 
-def get_metadata_outgoing(req, res):
-    print("get outgoing metadata is called")
-    return { 'foo' : 'wsgi with flask', 'bar' : 'wsgi metadata outgoing', }
+def mask_event(eventmodel):
+    # Your custom code to change or remove any sensitive fields
+    if 'password' in eventmodel.response.body:
+        eventmodel.response.body['password'] = None
+    return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'your application id goes here',
+    'APPLICATION_ID': 'Your Moesif Application Id',
+    'IDENTIFY_USER': identify_user,
+    'IDENTIFY_COMPANY': identify_company,
+    'LOG_BODY': True,
+    'SKIP': should_skip,
+    'DEBUG': False,
+    'MASK_EVENT_MODEL': mask_event,
+    'GET_SESSION_TOKEN': get_token,
     'GET_METADATA': get_metadata,
-    'GET_METADATA_OUTGOING': get_metadata_outgoing,
-    'IDENTIFY_USER': get_user,
     'CAPTURE_OUTGOING_REQUESTS': False,
-    'DEBUG': False
 }
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
@@ -83,6 +102,57 @@ def create_task():
     }
     tasks.append(task)
     return jsonify({'task': task}), 201
+
+@app.route('/users/<id>', methods=['POST'])
+def update_users(id):
+     app.wsgi_app.update_user({
+            'user_id': id,
+            'company_id': '67890', # If set, associate user with a company object
+            'campaign': {
+                'utm_source': 'google',
+                'utm_medium': 'cpc',
+                'utm_campaign': 'adwords',
+                'utm_term': 'api+tooling',
+                'utm_content': 'landing'
+            },
+            'metadata': {
+                'email': 'john@acmeinc.com',
+                'first_name': 'John',
+                'last_name': 'Doe',
+                'title': 'Software Engineer',
+                'sales_info': {
+                     'stage': 'Customer',
+                     'lifetime_value': 24000,
+                     'account_owner': 'mary@contoso.com'
+                }
+            }
+        })
+     return jsonify({'user_id': id, 'update_users': 'success'}), 201
+
+@app.route('/companies/<id>', methods=['POST'])
+def update_companies(id):
+    app.wsgi_app.update_company({
+            'company_id': id,
+            'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info
+            'campaign': {
+                'utm_source': 'google',
+                'utm_medium': 'cpc',
+                'utm_campaign': 'adwords',
+                'utm_term': 'api+tooling',
+                'utm_content': 'landing'
+            },
+            'metadata': {
+                'org_name': 'Acme, Inc',
+                'plan_name': 'Free',
+                'deal_stage': 'Lead',
+                'mrr': 24000,
+                'demographics': {
+                    'alexa_ranking': 500000,
+                    'employee_count': 47
+                }
+            }
+        })
+    return jsonify({'company_id': id, 'update_companies': 'success'}), 201
 
 @app.errorhandler(404)
 def not_found(error):

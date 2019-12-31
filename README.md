@@ -168,35 +168,30 @@ to associate this event with custom metadata. For example, you may want to save 
 ### Example:
 
 ```python
-def identify_user(req, res):
+def identify_user(app, environ):
     # Your custom code that returns a user id string
-    if req.user and req.user.is_authenticated:
-        return req.user.username
-    else:
-        return None
+    return "12345"
 
-def identify_company(req, res):
+def identify_company(app, environ):
     # Your custom code that returns a company id string
     return "67890"
 
-def should_skip(req, res):
+def should_skip(app, environ):
     # Your custom code that returns true to skip logging
-    if "health/probe" in req.path:
-        return True
-    else:
-        return False
+    return "health/probe" in environ.get('PATH_INFO', '')
 
-def get_token(req, res):
+def get_token(app, environ):
     # If you don't want to use the standard WSGI session token,
     # add your custom code that returns a string for session/API token
     return "XXXXXXXXXXXXXX"
 
 def mask_event(eventmodel):
     # Your custom code to change or remove any sensitive fields
-    eventmodel.response.body.password = None.
+    if 'password' in eventmodel.response.body:
+        eventmodel.response.body['password'] = None
     return eventmodel
 
-def get_metadata(req, res):
+def get_metadata(app, environ):
     return {
         'datacenter': 'westus',
         'deployment_version': 'v1.2.3',

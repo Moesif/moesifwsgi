@@ -375,7 +375,7 @@ companyB = {
   }
 }
 
-update_companies = api_client.update_companies_batch([userA, userB])
+update_companies = api_client.update_companies_batch([companyA, companyB])
 ```
 
 ## Other integrations

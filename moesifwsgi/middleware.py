@@ -26,6 +26,7 @@ from .app_config import AppConfig
 from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
+import gzip
 
 class DataHolder(object):
     """Capture the data for a request-response."""
@@ -194,6 +195,47 @@ class MoesifMiddleware(object):
                 if self.DEBUG:
                     print('skipped')
 
+    def start_with_json(self, body):
+        return body.startswith("{") or body.startswith("[")
+
+    def transform_headers(self, headers):
+        return {k.lower(): v for k, v in headers.items()}
+
+    def base64_body(self, body):
+        return base64.standard_b64encode(body).decode(encoding="UTF-8"), "base64"
+
+    def parse_bytes_body(self, body, content_encoding, headers):
+        try:
+            if content_encoding is not None and "gzip" in content_encoding.lower() or \
+                    (headers is not None and "content-encoding" in headers and headers["content-encoding"] is not None
+                     and "gzip" in (headers["content-encoding"]).lower()):
+                parsed_body, transfer_encoding = self.base64_body(gzip.decompress(body))
+            else:
+                string_data = body.decode(encoding="UTF-8")
+                if self.start_with_json(string_data):
+                    parsed_body = json.loads(string_data)
+                    transfer_encoding = 'json'
+                else:
+                    parsed_body, transfer_encoding = self.base64_body(body)
+        except:
+            parsed_body, transfer_encoding = self.base64_body(body)
+        return parsed_body, transfer_encoding
+
+    def parse_string_body(self, body, content_encoding, headers):
+        try:
+            if self.start_with_json(body):
+                parsed_body = json.loads(body)
+                transfer_encoding = 'json'
+            elif content_encoding is not None and "gzip" in content_encoding.lower() or \
+                    (headers is not None and "content-encoding" in headers and headers["content-encoding"] is not None
+                     and "gzip" in (headers["content-encoding"]).lower()):
+                decompressed_body = gzip.GzipFile(fileobj=StringIO(body)).read()
+                parsed_body, transfer_encoding = self.base64_body(decompressed_body)
+            else:
+                parsed_body, transfer_encoding = self.base64_body(body)
+        except:
+            parsed_body, transfer_encoding = self.base64_body(body)
+        return parsed_body, transfer_encoding
 
     def process_data(self, data):
         req_body = None
@@ -227,27 +269,20 @@ class MoesifMiddleware(object):
                 if self.DEBUG:
                     print('try to join response chunks failed - ')
 
+        rsp_headers = None
+        if data.response_headers:
+            rsp_headers = dict(data.response_headers)
+
         rsp_body = None
         rsp_body_transfer_encoding = None
         if self.LOG_BODY and response_content:
             if self.DEBUG:
                 print("about to process response")
                 print(response_content)
-            try:
-                rsp_body = json.loads(response_content)
-                if self.DEBUG:
-                    print("json parsed succesfully")
-            except:
-                if self.DEBUG:
-                    print("could not json parse, so base64 encode")
-                rsp_body = (base64.standard_b64encode(response_content)).decode(encoding='UTF-8')
-                rsp_body_transfer_encoding = 'base64'
-                if self.DEBUG:
-                    print("base64 encoded body: " + rsp_body)
-
-        rsp_headers = None
-        if data.response_headers:
-            rsp_headers = dict(data.response_headers)
+            if isinstance(response_content, str):
+                rsp_body, rsp_body_transfer_encoding = self.parse_string_body(response_content, None, self.transform_headers(rsp_headers))
+            else:
+                rsp_body, rsp_body_transfer_encoding = self.parse_bytes_body(response_content, None, self.transform_headers(rsp_headers))
 
         response_status = None
         if data.status:
@@ -401,8 +436,8 @@ class MoesifMiddleware(object):
                 elif cgi_var.startswith('HTTP_'):
                     yield cgi_var[5:].title().replace('_', '-'), value
 
-
     def request_body(self, environ):
+        content_encoding = environ.get('HTTP_CONTENT_ENCODING')
         content_length = environ.get('CONTENT_LENGTH')
         body = None
         encoded_body = None
@@ -418,20 +453,10 @@ class MoesifMiddleware(object):
 
             if isinstance(body, str):
                 environ['wsgi.input'] = StringIO(body) # reset request body for the nested app Python2
-                try:
-                    encoded_body = json.loads(body)
-                    transfer_encoding = 'json'
-                except:
-                    try:
-                        encoded_body = base64.standard_b64encode(body.encode()).decode(encoding="UTF-8")
-                        transfer_encoding = 'base64'
-                    except:
-                        encoded_body = base64.standard_b64encode(body).decode(encoding="UTF-8")
-                        transfer_encoding = 'base64'
+                encoded_body, transfer_encoding = self.parse_string_body(body, content_encoding, None)
             else:
                 environ['wsgi.input'] = BytesIO(body) # reset request body for the nested app Python3
-                encoded_body = base64.standard_b64encode(body).decode(encoding="UTF-8")
-                transfer_encoding = 'base64'
+                encoded_body, transfer_encoding = self.parse_bytes_body(body, content_encoding, None)
         else:
             content_length = 0
         return content_length, encoded_body, transfer_encoding

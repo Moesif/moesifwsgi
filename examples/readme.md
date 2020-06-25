@@ -21,11 +21,9 @@ the steps for setup Moesif. But this is instructions to run this example.
 1. Optional: Setup [virtual env](https://virtualenv.pypa.io/en/stable/) if needed.
 Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
 
-2. Install moesifwsgi in the environment by `pip install moesifwsgi`
+2. Inside `examples/flask/`, Install dependencies in the environment by `pip install -r requirements.txt`
 
-3. Install Flask Framework by, `pip install Flask`
-
-4. Be sure to edit the `examples/flask/hello.py` to include your own application id.
+3. Be sure to edit the `examples/flask/hello.py` to include your own application id.
 
 ```
 moesif_settings = {
@@ -33,7 +31,7 @@ moesif_settings = {
 }
 ```
 
-5. Inside, `examples/flask/` folder. Run `$ export FLASK_APP=hello.py` and then `$ flask run`
+4. Inside, `examples/flask/` folder. Run `$ export FLASK_APP=hello.py` and then `$ flask run`
 
 To verify: send few request to the local server such as 'http://127.0.0.1:5000/todo/api/v1.0/tasks' and
 check in your moesif account that events are captured.
@@ -46,13 +44,11 @@ The example is under `/examples/bottle`
 1. Optional: Setup [virtual env](https://virtualenv.pypa.io/en/stable/).
 Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
 
-2. Install moesifwsgi in the environment by `pip install moesifwsgi`
+2. Inside `examples/bottle/`, Install dependencies in the environment by `pip install -r requirements.txt`
 
-3. Install Rest Framework by, `pip install bottle`
+3. Be sure to edit the `examples/bottle/hello.py` to include your own application id in `moesif_settings`.
 
-4. Be sure to edit the `examples/bottle/hello.py` to include your own application id in `moesif_settings`.
-
-5. Inside, `examples/bottle/` folder. Run `python hello.py`
+4. Inside, `examples/bottle/` folder. Run `python hello.py`
 
 To verify: send few request to the local server such as 'http://localhost:6080/hello' and
 check in your moesif account that events are captured.
@@ -65,15 +61,9 @@ The example is under `examples/falcon`
 1. Optional: Setup [virtual env](https://virtualenv.pypa.io/en/stable/).
 Start the virtual env by `virtualenv benv` & `source benv/bin/activate`
 
-2. Install moesifwsgi in the environment by `pip install moesifwsgi`
+2. Inside `examples/falcon/`, Install dependencies in the environment by `pip install -r requirements.txt`
 
-3. Install Falcon web frame-work `pip install falcon`
-
-4. Install Gunicorn `pip install gunicorn`
-
-5. Install Falcon multipart Middleware `pip install falcon-multipart`
-
-6. Be sure to edit the `examples/falcon/hello.py` to include your own application id.
+3. Be sure to edit the `examples/falcon/hello.py` to include your own application id.
 
 ```python
 app = MoesifMiddleware(app, {
@@ -81,7 +71,7 @@ app = MoesifMiddleware(app, {
 })
 ```
 
-7. Inside, `examples/falcon/` folder. Start the server `gunicorn hello:app`
+4. Inside, `examples/falcon/` folder. Start the server `gunicorn hello:app`
 
 To verify: send few request to the local server such as 'http://localhost:8000/hello' and
 check in your moesif account that events are captured.

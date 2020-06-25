@@ -12,7 +12,7 @@ class AppConfig:
             return config_api_response
         except APIException as inst:
             if 401 <= inst.response_code <= 403:
-                print("Unauthorized access getting application configuration. Please check your Appplication Id.")
+                print("Unauthorized access getting application configuration. Please check your Application Id.")
             if debug:
                 print("Error getting application configuration, with status code:")
                 print(inst.response_code)

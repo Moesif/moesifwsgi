@@ -17,7 +17,7 @@ from .parse_body import ParseBody
 from .logger_helper import LoggerHelper
 from .moesif_data_holder import DataHolder
 from .event_mapper import EventMapper
-from .send_async_event import SendEventAsync
+from .send_batch_events import SendEventAsync
 from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
@@ -70,7 +70,7 @@ class MoesifMiddleware(object):
         self.sampling_percentage = 100
         self.last_updated_time = datetime.utcnow()
         self.moesif_events_queue = queue.Queue()
-        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 25)
+        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 2)
         self.schedule_background_job()
         try:
             if self.config:
@@ -176,8 +176,8 @@ class MoesifMiddleware(object):
             scheduler.start()
             try:
                 scheduler.add_job(
-                    func=lambda: self.send_async_events.async_client_create_event(self.api_client, self.moesif_events_queue,
-                                                                                  self.DEBUG, self.BATCH_SIZE),
+                    func=lambda: self.send_async_events.batch_events(self.api_client, self.moesif_events_queue,
+                                                                     self.DEBUG, self.BATCH_SIZE),
                     trigger=IntervalTrigger(seconds=1),
                     id='moesif_events_batch_job',
                     name='Schedule events batch job every 1 second',

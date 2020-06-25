@@ -8,7 +8,7 @@ class SendEventAsync:
             if debug:
                 print("Error while closing the queue or scheduler shut down")
 
-    def send_event(self, api_client, batch_events, debug):
+    def send_events(self, api_client, batch_events, debug):
         try:
             if debug:
                 print("Sending events to Moesif")
@@ -25,17 +25,18 @@ class SendEventAsync:
                 print(str(ex))
             return None
 
-    def async_client_create_event(self, api_client, moesif_events_queue, debug, batch_size):
+    def batch_events(self, api_client, moesif_events_queue, debug, batch_size):
         batch_events = []
         try:
-            while moesif_events_queue.qsize() > 0:
+            while not moesif_events_queue.empty():
                 batch_events.append(moesif_events_queue.get_nowait())
                 if len(batch_events) == batch_size:
-                    batch_response = self.send_event(api_client, batch_events, debug)
-                    batch_events.clear()
-                    return batch_response
+                    break
+
             if batch_events:
-                return self.send_event(api_client, batch_events, debug)
+                batch_response = self.send_events(api_client, batch_events, debug)
+                batch_events[:] = []
+                return batch_response
             else:
                 if debug:
                     print("No events to send")

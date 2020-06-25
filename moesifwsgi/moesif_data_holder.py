@@ -4,7 +4,7 @@ import uuid
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, capture_transaction_id, id, method, url, ip, user_id, company_id, metadata, session_token, request_headers, content_length, request_body, transfer_encoding):
+    def __init__(self, disable_capture_transaction_id, id, method, url, ip, user_id, company_id, metadata, session_token, request_headers, content_length, request_body, transfer_encoding):
         self.request_id = id
         self.method = method
         self.url = url
@@ -24,7 +24,7 @@ class DataHolder(object):
         self.request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         self.start_at = time.time()
         self.transaction_id = None
-        if not capture_transaction_id:
+        if not disable_capture_transaction_id:
             req_trans_id = [value for key, value in request_headers if key == "X-Moesif-Transaction-Id"]
             if req_trans_id:
                 self.transaction_id = req_trans_id[0]

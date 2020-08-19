@@ -120,10 +120,14 @@ class MoesifMiddleware(object):
                         print('Add Event to the queue')
                     # Prepare event to be sent to Moesif
                     event_data = self.process_data(data_holder)
-                    # Add Weight to the event
-                    event_data.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)
-                    # Add Event to the queue
-                    self.moesif_events_queue.put(event_data)
+                    if event_data:
+                        # Add Weight to the event
+                        event_data.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)
+                        # Add Event to the queue
+                        self.moesif_events_queue.put(event_data)
+                    else:
+                        if self.DEBUG:
+                            print('Skipped Event as the moesif event model is None')
                 else:
                     if self.DEBUG:
                         print("Skipped Event due to sampling percentage: " + str(self.sampling_percentage) + " and random percentage: " + str(random_percentage))

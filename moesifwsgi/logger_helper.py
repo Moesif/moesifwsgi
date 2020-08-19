@@ -132,4 +132,4 @@ class LoggerHelper:
         except:
             if debug:
                 print("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.")
-            return event_model
+        return event_model

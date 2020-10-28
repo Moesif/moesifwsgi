@@ -6,7 +6,7 @@
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-WSGI middleware that logs _incoming_ or _outgoing_ API calls and sends to [Moesif](https://www.moesif.com) for API analytics and log analysis.
+WSGI middleware that automatically logs _incoming_ or _outgoing_ API calls and sends to [Moesif](https://www.moesif.com) for API analytics and monitoring.
 Supports Python Frameworks built on WSGI such as Flask, Bottle, and Pyramid.
 
 [Source Code on GitHub](https://github.com/moesif/moesifwsgi)

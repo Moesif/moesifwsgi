@@ -9,13 +9,19 @@ except ImportError:
 
 class ParseBody:
 
-    def start_with_json(self, body):
+    def __init__(self):
+        pass
+
+    @classmethod
+    def start_with_json(cls, body):
         return body.startswith("{") or body.startswith("[")
 
-    def transform_headers(self, headers):
+    @classmethod
+    def transform_headers(cls, headers):
         return {k.lower(): v for k, v in headers.items()}
 
-    def base64_body(self, body):
+    @classmethod
+    def base64_body(cls, body):
         return base64.standard_b64encode(body).decode(encoding="UTF-8"), "base64"
 
     def parse_bytes_body(self, body, content_encoding, headers):

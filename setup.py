@@ -28,9 +28,9 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.3.1',
+    version='1.3.2',
 
-    description='Moesif Middleware for Python WSGI based flatforms (Flask, Bottle & Others)',
+    description='Moesif Middleware for Python WSGI based platforms (Flask, Bottle & Others)',
     long_description=long_description,
     long_description_content_type="text/markdown",
 

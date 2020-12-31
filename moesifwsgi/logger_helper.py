@@ -4,6 +4,8 @@ except ImportError:
     from io import StringIO
 from .parse_body import ParseBody
 from io import BytesIO
+import json
+import base64
 
 
 class LoggerHelper:
@@ -30,7 +32,8 @@ class LoggerHelper:
                 elif cgi_var.startswith('HTTP_'):
                     yield cgi_var[5:].title().replace('_', '-'), value
 
-    def request_url(self, environ):
+    @classmethod
+    def request_url(cls, environ):
         return '{0}{1}{2}{3}{4}'.format(
             environ.get('SCRIPT_NAME', ''),
             environ.get('wsgi.url_scheme', ''),
@@ -64,19 +67,113 @@ class LoggerHelper:
             content_length = 0
         return content_length, encoded_body, transfer_encoding
 
+    @classmethod
+    def transform_token(cls, token):
+        if not isinstance(token, str):
+            token = token.decode('utf-8')
+        return token
+
+    @classmethod
+    def fetch_token(cls, token, token_type):
+        return token.split(token_type, 1)[1].strip()
+
+    @classmethod
+    def split_token(cls, token):
+        return token.split('.')
+
+    def parse_authorization_header(self, token, field, debug):
+        try:
+            # Fix the padding issue before decoding
+            token += '=' * (-len(token) % 4)
+            # Decode the payload
+            base64_decode = base64.b64decode(token)
+            # Transform token to string to be compatible with Python 2 and 3
+            base64_decode = self.transform_token(base64_decode)
+            # Convert the payload to json
+            json_decode = json.loads(base64_decode)
+            # Convert keys to lowercase
+            json_decode = {k.lower(): v for k, v in json_decode.items()}
+            # Check if field is present in the body
+            if field in json_decode:
+                # Fetch user Id
+                return str(json_decode[field])
+        except Exception as e:
+            if debug:
+                print("Error while parsing authorization header to fetch user id.")
+                print(e)
+        return None
+
     def get_user_id(self, environ, settings, app, debug):
         username = None
         try:
             identify_user = settings.get("IDENTIFY_USER")
             if identify_user is not None:
                 username = identify_user(app, environ)
+            if not username:
+                # Parse request headers
+                request_headers = dict([(k.lower(), v) for k, v in self.parse_request_headers(environ)])
+                # Fetch the auth header name from the config
+                auth_header_names = settings.get('AUTHORIZATION_HEADER_NAME', 'authorization').lower()
+                # Split authorization header name by comma
+                auth_header_names = [x.strip() for x in auth_header_names.split(',')]
+                # Fetch the header name available in the request header
+                token = None
+                for auth_name in auth_header_names:
+                    # Check if the auth header name in request headers
+                    if auth_name in request_headers:
+                        # Fetch the token from the request headers
+                        token = request_headers[auth_name]
+                        # Split the token by comma
+                        token = [x.strip() for x in token.split(',')]
+                        # Fetch the first available header
+                        if len(token) >= 1:
+                            token = token[0]
+                        else:
+                            token = None
+                        break
+                # Fetch the field from the config
+                field = settings.get('AUTHORIZATION_USER_ID_FIELD', 'sub').lower()
+                # Check if token is not None
+                if token:
+                    # Check if token is of type Bearer
+                    if 'Bearer' in token:
+                        # Fetch the bearer token
+                        token = self.fetch_token(token, 'Bearer')
+                        # Split the bearer token by dot(.)
+                        split_token = self.split_token(token)
+                        # Check if payload is not None
+                        if len(split_token) >= 3 and split_token[1]:
+                            # Parse and set user Id
+                            username = self.parse_authorization_header(split_token[1], field, debug)
+                    # Check if token is of type Basic
+                    elif 'Basic' in token:
+                        # Fetch the basic token
+                        token = self.fetch_token(token, 'Basic')
+                        # Decode the token
+                        decoded_token = base64.b64decode(token)
+                        # Transform token to string to be compatible with Python 2 and 3
+                        decoded_token = self.transform_token(decoded_token)
+                        # Fetch the username and set the user Id
+                        username = decoded_token.split(':', 1)[0].strip()
+                    # Check if token is of user-defined custom type
+                    else:
+                        # Split the token by dot(.)
+                        split_token = self.split_token(token)
+                        # Check if payload is not None
+                        if len(split_token) > 1 and split_token[1]:
+                            # Parse and set user Id
+                            username = self.parse_authorization_header(split_token[1], field, debug)
+                        else:
+                            # Parse and set user Id
+                            username = self.parse_authorization_header(token, field, debug)
         except Exception as e:
             if debug:
                 print("can not execute identify_user function, please check moesif settings.")
                 print(e)
         return username
 
-    def get_company_id(self, environ, settings, app, debug):
+    @classmethod
+    def get_company_id(cls, environ, settings, app, debug):
         company_id = None
         try:
             identify_company = settings.get("IDENTIFY_COMPANY")
@@ -88,7 +185,8 @@ class LoggerHelper:
                 print(e)
         return company_id
 
-    def get_metadata(self, environ, settings, app, debug):
+    @classmethod
+    def get_metadata(cls, environ, settings, app, debug):
         metadata = None
         try:
             get_meta = settings.get("GET_METADATA")
@@ -100,7 +198,8 @@ class LoggerHelper:
                 print(e)
         return metadata
 
-    def get_session_token(self, environ, settings, app, debug):
+    @classmethod
+    def get_session_token(cls, environ, settings, app, debug):
         session_token = None
         try:
             get_session = settings.get("GET_SESSION_TOKEN")
@@ -112,7 +211,8 @@ class LoggerHelper:
                 print(e)
         return session_token
 
-    def should_skip(self, environ, settings, app, debug):
+    @classmethod
+    def should_skip(cls, environ, settings, app, debug):
         try:
             skip_proc = settings.get("SKIP")
             if skip_proc is not None:
@@ -124,7 +224,8 @@ class LoggerHelper:
                 print("error trying to execute skip function.")
             return False
 
-    def mask_event(self, event_model, settings, debug):
+    @classmethod
+    def mask_event(cls, event_model, settings, debug):
         try:
             mask_event_model = settings.get("MASK_EVENT_MODEL")
             if mask_event_model is not None:

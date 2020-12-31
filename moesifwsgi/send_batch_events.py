@@ -1,6 +1,11 @@
 
 class SendEventAsync:
-    def exit_handler(self, scheduler, debug):
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def exit_handler(cls, scheduler, debug):
         try:
             # Shut down the scheduler
             scheduler.shutdown()
@@ -8,7 +13,8 @@ class SendEventAsync:
             if debug:
                 print("Error while closing the queue or scheduler shut down")
 
-    def send_events(self, api_client, batch_events, debug):
+    @classmethod
+    def send_events(cls, api_client, batch_events, debug):
         try:
             if debug:
                 print("Sending events to Moesif")

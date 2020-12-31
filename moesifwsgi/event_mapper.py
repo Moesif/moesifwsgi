@@ -7,7 +7,8 @@ class EventMapper:
     def __init__(self):
         self.parse_body = ParseBody()
 
-    def to_event(self, data, event_req, event_rsp):
+    @classmethod
+    def to_event(cls, data, event_req, event_rsp):
         # Prepare Event Model
         return EventModel(request=event_req,
                           response=event_rsp,
@@ -17,7 +18,8 @@ class EventMapper:
                           metadata=data.metadata,
                           direction="Incoming")
 
-    def to_request(self, data, log_body, api_version):
+    @classmethod
+    def to_request(cls, data, log_body, api_version):
         req_body = None
         req_transfer_encoding = None
         if log_body:

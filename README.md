@@ -49,7 +49,7 @@ After signing up for a Moesif account, your Moesif Application Id will be displa
 
 You can always find your Moesif Application Id at any time by logging 
 into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
-and then clicking _Installation_.
+and then clicking _API Keys_.
 
 For an example with Flask, see example in the `/examples/flask` folder of this repo.
 
@@ -138,6 +138,9 @@ to associate this event with custom metadata. For example, you may want to save 
 
 #### __`LOG_BODY`__
 (optional) _boolean_, default True, Set to False to remove logging request and response body.
+
+#### __`BATCH_SIZE`__
+(optional) __int__, default 25, Maximum batch size when sending events to Moesif.
 
 #### __`AUTHORIZATION_HEADER_NAME`__
 (optional) _string_, A request header field name used to identify the User in Moesif. Default value is `authorization`. Also, supports a comma separated string. We will check headers in order like `"X-Api-Key,Authorization"`.

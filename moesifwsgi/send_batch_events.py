@@ -8,10 +8,12 @@ class SendEventAsync:
     def exit_handler(cls, scheduler, debug):
         try:
             # Shut down the scheduler
+            scheduler.remove_job('moesif_events_batch_job')
             scheduler.shutdown()
-        except:
+        except Exception as ex:
             if debug:
                 print("Error while closing the queue or scheduler shut down")
+                print(str(ex))
 
     @classmethod
     def send_events(cls, api_client, batch_events, debug):

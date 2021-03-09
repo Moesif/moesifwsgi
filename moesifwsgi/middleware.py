@@ -43,7 +43,7 @@ class MoesifMiddleware(object):
 
         if settings.get('DEBUG', False):
             Configuration.BASE_URI = settings.get('LOCAL_MOESIF_BASEURL', 'https://api.moesif.net')
-
+        Configuration.version = 'moesifwsgi-python/1.3.3'
         self.DEBUG = settings.get('DEBUG', False)
         if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
             try:
@@ -70,7 +70,7 @@ class MoesifMiddleware(object):
         self.sampling_percentage = 100
         self.last_updated_time = datetime.utcnow()
         self.moesif_events_queue = queue.Queue()
-        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 2)
+        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 25)
         self.schedule_background_job()
         try:
             if self.config:

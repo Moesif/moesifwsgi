@@ -21,6 +21,11 @@ from .send_batch_events import SendEventAsync
 from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
+import atexit
+import logging
 
 
 class MoesifMiddleware(object):
@@ -43,7 +48,7 @@ class MoesifMiddleware(object):
 
         if settings.get('DEBUG', False):
             Configuration.BASE_URI = settings.get('LOCAL_MOESIF_BASEURL', 'https://api.moesif.net')
-        Configuration.version = 'moesifwsgi-python/1.3.3'
+        Configuration.version = 'moesifwsgi-python/1.3.4'
         self.DEBUG = settings.get('DEBUG', False)
         if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
             try:
@@ -71,7 +76,9 @@ class MoesifMiddleware(object):
         self.last_updated_time = datetime.utcnow()
         self.moesif_events_queue = queue.Queue()
         self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 25)
-        self.schedule_background_job()
+        self.last_event_job_run_time = datetime(1970, 1, 1, 0, 0)  # Assuming job never ran, set it to epoch start time
+        self.scheduler = None
+        self.is_event_job_scheduled = False
         try:
             if self.config:
                 self.config_etag, self.sampling_percentage, self.last_updated_time = self.app_config.parse_configuration(
@@ -115,16 +122,31 @@ class MoesifMiddleware(object):
                                                                                    self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
 
                 if self.sampling_percentage >= random_percentage:
-                    # send the event to moesif via background so not blocking
-                    if self.DEBUG:
-                        print('Add Event to the queue')
                     # Prepare event to be sent to Moesif
                     event_data = self.process_data(data_holder)
                     if event_data:
                         # Add Weight to the event
                         event_data.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)
-                        # Add Event to the queue
-                        self.moesif_events_queue.put(event_data)
+                        try:
+                            if not self.is_event_job_scheduled and datetime.utcnow() > self.last_event_job_run_time + timedelta(
+                                    minutes=5):
+                                try:
+                                    self.schedule_background_job()
+                                    self.is_event_job_scheduled = True
+                                    self.last_event_job_run_time = datetime.utcnow()
+                                except Exception as ex:
+                                    self.is_event_job_scheduled = False
+                                    if self.DEBUG:
+                                        print('Error while starting the event scheduler job in background')
+                                        print(str(ex))
+                            # Add Event to the queue
+                            if self.DEBUG:
+                                print('Add Event to the queue')
+                            self.moesif_events_queue.put(event_data)
+                        except Exception as ex:
+                            if self.DEBUG:
+                                print("Error while adding event to the queue")
+                                print(str(ex))
                     else:
                         if self.DEBUG:
                             print('Skipped Event as the moesif event model is None')
@@ -149,15 +171,17 @@ class MoesifMiddleware(object):
         # Mask Event Model
         return self.logger_helper.mask_event(event_model, self.settings, self.DEBUG)
 
+    # Function to listen to the send event job response
     def moesif_event_listener(self, event):
         if event.exception:
             if self.DEBUG:
                 print('Error reading response from the scheduled job')
         else:
             if event.retval:
-                if event.retval is not None \
+                response_etag, self.last_event_job_run_time = event.retval
+                if response_etag is not None \
                     and self.config_etag is not None \
-                    and self.config_etag != event.retval \
+                    and self.config_etag != response_etag \
                         and datetime.utcnow() > self.last_updated_time + timedelta(minutes=5):
                     try:
                         self.config = self.app_config.get_config(self.api_client, self.DEBUG)
@@ -170,32 +194,29 @@ class MoesifMiddleware(object):
 
     def schedule_background_job(self):
         try:
-            from apscheduler.schedulers.background import BackgroundScheduler
-            from apscheduler.triggers.interval import IntervalTrigger
-            from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
-            import atexit
-
-            scheduler = BackgroundScheduler(daemon=True)
-            scheduler.add_listener(self.moesif_event_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-            scheduler.start()
-            try:
-                scheduler.add_job(
+            if not self.scheduler:
+                self.scheduler = BackgroundScheduler(daemon=True)
+            if not self.scheduler.get_jobs():
+                self.scheduler.add_listener(self.moesif_event_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+                self.scheduler.start()
+                self.scheduler.add_job(
                     func=lambda: self.send_async_events.batch_events(self.api_client, self.moesif_events_queue,
                                                                      self.DEBUG, self.BATCH_SIZE),
-                    trigger=IntervalTrigger(seconds=1),
+                    trigger=IntervalTrigger(seconds=2),
                     id='moesif_events_batch_job',
-                    name='Schedule events batch job every 1 second',
+                    name='Schedule events batch job every 2 second',
                     replace_existing=True)
 
+                # Avoid passing logging message to the ancestor loggers
+                logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
+                logging.getLogger('apscheduler.executors.default').propagate = False
+
                 # Exit handler when exiting the app
-                atexit.register(lambda: self.send_async_events.exit_handler(scheduler, self.DEBUG))
-            except Exception as ex:
-                if self.DEBUG:
-                    print("Error while calling async function")
-                    print(str(ex))
-        except:
+                atexit.register(lambda: self.send_async_events.exit_handler(self.scheduler, self.DEBUG))
+        except Exception as ex:
             if self.DEBUG:
                 print("Error when scheduling the job")
+                print(str(ex))
 
     def update_user(self, user_profile):
         User().update_user(user_profile, self.api_client, self.DEBUG)

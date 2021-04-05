@@ -1,3 +1,5 @@
+from datetime import datetime
+
 
 class SendEventAsync:
 
@@ -44,10 +46,14 @@ class SendEventAsync:
             if batch_events:
                 batch_response = self.send_events(api_client, batch_events, debug)
                 batch_events[:] = []
-                return batch_response
+                return batch_response, datetime.utcnow()
             else:
                 if debug:
                     print("No events to send")
+                # Set the last time event job ran but no message to read from the queue
+                return None, datetime.utcnow()
         except:
             if debug:
                 print("No message to read from the queue")
+            # Set the last time event job ran when exception occurred while sending event
+            return None, datetime.utcnow()

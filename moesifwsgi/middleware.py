@@ -47,8 +47,8 @@ class MoesifMiddleware(object):
             raise Exception('Moesif Application ID is required in settings')
 
         if settings.get('DEBUG', False):
-            Configuration.BASE_URI = settings.get('LOCAL_MOESIF_BASEURL', 'https://api.moesif.net')
-        Configuration.version = 'moesifwsgi-python/1.3.4'
+            Configuration.BASE_URI = self.get_configuration_uri(settings, 'BASE_URI', 'LOCAL_MOESIF_BASEURL')
+        Configuration.version = 'moesifwsgi-python/1.3.5'
         self.DEBUG = settings.get('DEBUG', False)
         if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
             try:
@@ -87,6 +87,14 @@ class MoesifMiddleware(object):
             if self.DEBUG:
                 print('Error while parsing application configuration on initialization')
                 print(str(ex))
+
+    # Function to get configuration uri
+    def get_configuration_uri(self, settings, field, deprecated_field):
+        uri = settings.get(field)
+        if uri:
+            return uri
+        else:
+            return settings.get(deprecated_field, 'https://api.moesif.net')
 
     def __call__(self, environ, start_response):
         data_holder = DataHolder(

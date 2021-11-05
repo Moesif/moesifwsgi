@@ -396,6 +396,14 @@ companyB = {
 
 update_companies = api_client.update_companies_batch([companyA, companyB])
 ```
+## Troubleshooting
+
+When using Docker with Ubuntu based image, if events are not being captured, it could be possible as the image can't find any timezone configuration. 
+In order to resolve that, add the following line to your Dockerfile
+```
+ENV TZ=UTC
+```
+or you could add `RUN apt-get install tzdata` in the Dockerfile.
 
 ## Other integrations
 

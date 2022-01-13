@@ -49,17 +49,17 @@ class AppConfig:
 
             regex_config = config_body.get('regex_config', None)
 
-            if user_id and user_sample_rate and user_id in user_sample_rate:
-                return user_sample_rate[user_id]
-
-            if company_id and company_sample_rate and company_id in company_sample_rate:
-                return company_sample_rate[company_id]
-
             if regex_config:
                 config_mapping = self.regex_config_helper.prepare_config_mapping(event_data)
                 regex_sample_rate = self.regex_config_helper.fetch_sample_rate_on_regex_match(regex_config, config_mapping)
                 if regex_sample_rate:
                     return regex_sample_rate
+
+            if user_id and user_sample_rate and user_id in user_sample_rate:
+                return user_sample_rate[user_id]
+
+            if company_id and company_sample_rate and company_id in company_sample_rate:
+                return company_sample_rate[company_id]
 
             return config_body.get('sample_rate', 100)
         else:

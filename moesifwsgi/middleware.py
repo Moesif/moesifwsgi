@@ -125,13 +125,14 @@ class MoesifMiddleware(object):
             if not self.logger_helper.should_skip(environ, self.settings, self.app, self.DEBUG):
                 random_percentage = random.random() * 100
 
-                self.sampling_percentage = self.app_config.get_sampling_percentage(self.config,
+                # Prepare event to be sent to Moesif
+                event_data = self.process_data(data_holder)
+
+                self.sampling_percentage = self.app_config.get_sampling_percentage(event_data, self.config,
                                                                                    self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),
                                                                                    self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
 
                 if self.sampling_percentage >= random_percentage:
-                    # Prepare event to be sent to Moesif
-                    event_data = self.process_data(data_holder)
                     if event_data:
                         # Add Weight to the event
                         event_data.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)

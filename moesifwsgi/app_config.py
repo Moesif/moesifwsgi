@@ -1,13 +1,14 @@
 from datetime import datetime
 import json
 from moesifapi.exceptions.api_exception import *
+from .regex_config_helper import RegexConfigHelper
 
 
 # Application Configuration
 class AppConfig:
 
     def __init__(self):
-        pass
+        self.regex_config_helper = RegexConfigHelper()
 
     @classmethod
     def get_config(cls, api_client, debug):
@@ -36,8 +37,7 @@ class AppConfig:
                 print('Error while parsing the configuration object, setting the sample rate to default')
             return None, 100, datetime.utcnow()
 
-    @classmethod
-    def get_sampling_percentage(cls, config, user_id, company_id):
+    def get_sampling_percentage(self, event_data, config, user_id, company_id):
         """Get sampling percentage"""
 
         if config is not None:
@@ -46,6 +46,14 @@ class AppConfig:
             user_sample_rate = config_body.get('user_sample_rate', None)
 
             company_sample_rate = config_body.get('company_sample_rate', None)
+
+            regex_config = config_body.get('regex_config', None)
+
+            if regex_config:
+                config_mapping = self.regex_config_helper.prepare_config_mapping(event_data)
+                regex_sample_rate = self.regex_config_helper.fetch_sample_rate_on_regex_match(regex_config, config_mapping)
+                if regex_sample_rate:
+                    return regex_sample_rate
 
             if user_id and user_sample_rate and user_id in user_sample_rate:
                 return user_sample_rate[user_id]

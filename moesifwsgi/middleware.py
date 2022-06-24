@@ -125,8 +125,11 @@ class MoesifMiddleware(object):
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
 
-        decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
-        environ['response-body'] = decoded_response_body
+        try:
+            decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
+            environ['response-body'] = decoded_response_body
+        except Exception as e:
+            print('Error while decoding response body to environ')
 
         data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),)
         data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))

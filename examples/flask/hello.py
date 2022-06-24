@@ -1,5 +1,5 @@
 from moesifwsgi import MoesifMiddleware
-from flask import Flask, jsonify, abort, make_response, request
+from flask import Flask, jsonify, abort, make_response, request, Response
 
 app = Flask(__name__)
 
@@ -19,10 +19,19 @@ def should_skip(app, environ):
     return "health/probe" in environ.get('PATH_INFO', '')
 
 def get_metadata(app, environ):
-    return {
-        'datacenter': 'westus',
-        'deployment_version': 'v1.2.3',
-    }
+    metadata = None
+
+    try:
+        metadata = {
+            'response-body': environ['response-body'],
+            'Content-Type': environ['response-headers']['Content-Type'.lower()],
+            'Content-Length': environ['response-headers']['Content-Length'.lower()],
+            'X-Moesif-Transaction-Id': environ['response-headers']['X-Moesif-Transaction-Id'.lower()]
+        }
+    except KeyError:
+        print('environ has no field [response-body] or [response-headers]')
+
+    return metadata
 
 def mask_event(eventmodel):
     # Your custom code to change or remove any sensitive fields
@@ -82,6 +91,35 @@ tasks = [
 def get_tasks():
     return jsonify({'tasks': tasks})
 
+response = [
+    {
+        'id': 1,
+        'title': u'Buy groceries',
+        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol',
+        'done': False
+    },
+    {
+        'id': 2,
+        'title': u'Learn Python',
+        'description': u'Need to find a good Python tutorial on the web',
+        'done': False
+    }
+]
+
+@app.route('/test/html_response', methods=['GET'])
+def html_response():
+    return """
+    <p>Hello</p>
+    <p>world</p>
+    """
+
+@app.route('/test/xml_response', methods=['GET'])
+def xml_response():
+    return Response(response='TEST XML OK', status = 200, mimetype='application/xml')
+
+@app.route('/test/json_response', methods=['GET'])
+def json_response():
+    return jsonify({'response': response})
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):

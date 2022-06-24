@@ -1,0 +1,62 @@
+{"request":{
+    "id": "evt_1KgauIEQc06VM4aW2uybsO2L",
+    "object": "event",
+    "api_version": "2020-08-27",
+    "created": 1648067750,
+    "data": {
+      "object": {
+        "id": "cus_LNLbAbqXnfFSFI",
+        "object": "customer",
+        "address": null,
+        "balance": 0,
+        "created": 1648067735,
+        "currency": "usd",
+        "default_source": "src_1KgauHEQc06VM4aWRPsH7ZOb",
+        "delinquent": false,
+        "description": null,
+        "discount": null,
+        "email": "xinyu@moesif.com",
+        "invoice_prefix": "254F7A3B",
+        "invoice_settings": {
+          "custom_fields": null,
+          "default_payment_method": null,
+          "footer": null
+        },
+        "livemode": false,
+        "metadata": {
+        },
+        "name": "Test Customer 14 webhook url 1.0",
+        "next_invoice_sequence": 1,
+        "phone": null,
+        "preferred_locales": [
+        ],
+        "shipping": null,
+        "tax_exempt": "none",
+        "test_clock": null
+      },
+      "previous_attributes": {
+        "default_source": null
+      }
+    },
+    "livemode": false,
+    "pending_webhooks": 1,
+    "request": {
+      "id": null,
+      "idempotency_key": "57233bfb-0721-4814-a9ec-a62cd0d06d0a"
+    },
+    "type": "customer.updated"
+  },
+  "response":{
+    "moesif_error": {
+      "obj.request.id": [
+        {
+          "msg": [
+            "error.expected.jsstring"
+          ],
+          "args": [
+          ]
+        }
+      ]
+    }
+  }
+}

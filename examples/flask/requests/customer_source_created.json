@@ -1,0 +1,74 @@
+{"request":{
+    "id": "evt_1KgauIEQc06VM4aWUlr6lLiq",
+    "object": "event",
+    "api_version": "2020-08-27",
+    "created": 1648067750,
+    "data": {
+      "object": {
+        "id": "src_1KgauHEQc06VM4aWRPsH7ZOb",
+        "object": "source",
+        "ach_credit_transfer": {
+          "account_number": "test_d8280f5ab8e8",
+          "routing_number": "110000000",
+          "fingerprint": "C4eSANlsTdkf6mDL",
+          "swift_code": "TSTEZ122",
+          "bank_name": "TEST BANK",
+          "refund_routing_number": null,
+          "refund_account_holder_type": null,
+          "refund_account_holder_name": null
+        },
+        "amount": null,
+        "client_secret": "src_client_secret_eaRygGJgtS0Qiz14GS8F19mt",
+        "created": 1648067749,
+        "currency": "usd",
+        "customer": "cus_LNLbAbqXnfFSFI",
+        "flow": "receiver",
+        "livemode": false,
+        "metadata": {
+        },
+        "owner": {
+          "address": null,
+          "email": "amount_0@stripe.com",
+          "name": null,
+          "phone": null,
+          "verified_address": null,
+          "verified_email": null,
+          "verified_name": null,
+          "verified_phone": null
+        },
+        "receiver": {
+          "address": "110000000-test_d8280f5ab8e8",
+          "amount_charged": 0,
+          "amount_received": 0,
+          "amount_returned": 0,
+          "refund_attributes_method": "email",
+          "refund_attributes_status": "missing"
+        },
+        "statement_descriptor": null,
+        "status": "pending",
+        "type": "ach_credit_transfer",
+        "usage": "reusable"
+      }
+    },
+    "livemode": false,
+    "pending_webhooks": 1,
+    "request": {
+      "id": null,
+      "idempotency_key": "57233bfb-0721-4814-a9ec-a62cd0d06d0a"
+    },
+    "type": "customer.source.created"
+  },
+  "response":{
+    "moesif_error": {
+      "obj.request.id": [
+        {
+          "msg": [
+            "error.expected.jsstring"
+          ],
+          "args": [
+          ]
+        }
+      ]
+    }
+  }
+}

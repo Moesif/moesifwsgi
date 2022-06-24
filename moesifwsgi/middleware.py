@@ -103,10 +103,6 @@ class MoesifMiddleware(object):
                         environ['REQUEST_METHOD'],
                         self.logger_helper.request_url(environ),
                         self.client_ip.get_client_address(environ),
-                        self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG),
                         [(k, v) for k,v in self.logger_helper.parse_request_headers(environ)],
                         *self.logger_helper.request_body(environ)
                     )
@@ -114,9 +110,28 @@ class MoesifMiddleware(object):
         def _start_response(status, response_headers, *args):
             # Capture status and response_headers for later processing
             data_holder.capture_response_status(status, response_headers)
+
+            if response_headers:
+                response_headers_dict = {}
+                try:
+                    for pair in response_headers:
+                        response_headers_dict[pair[0].lower()] = pair[1]
+                except Exception as e:
+                    print('Error while parsing response headers', e)
+
+                environ['response-headers'] = response_headers_dict
+
             return start_response(status, response_headers, *args)
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
+
+        decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
+        environ['response-body'] = decoded_response_body
+
+        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),)
+        data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
+        data_holder.set_metadata(self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG))
+        data_holder.set_session_token(self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG))
 
         # return data to WSGI server
         try:

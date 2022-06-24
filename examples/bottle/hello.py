@@ -20,10 +20,17 @@ def should_skip(app, environ):
     return "health/probe" in environ.get('PATH_INFO', '')
 
 def get_metadata(app, environ):
-    return {
-        'datacenter': 'westus',
-        'deployment_version': 'v1.2.3',
-    }
+    metadata = None
+    try:
+        metadata = {
+            'response-body': environ['response-body'],
+            'Content-Type': environ['response-headers']['Content-Type'.lower()],
+            'Content-Length': environ['response-headers']['Content-Length'.lower()],
+            'X-Moesif-Transaction-Id': environ['response-headers']['X-Moesif-Transaction-Id'.lower()]
+        }
+    except KeyError:
+        print('environ has no field [response-body] or [response-headers]')
+    return metadata
 
 def mask_event(eventmodel):
     # Your custom code to change or remove any sensitive fields
@@ -137,6 +144,39 @@ def get_iso():
 def get_latin():
     response.content_type = 'text/html; charset=latin9'
     return u'ISO-8859-15 is also known as latin9.'
+
+response = [
+    {
+        'id': 1,
+        'title': u'Buy groceries',
+        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol',
+        'done': False
+    },
+    {
+        'id': 2,
+        'title': u'Learn Python',
+        'description': u'Need to find a good Python tutorial on the web',
+        'done': False
+    }
+]
+
+@app.route('/test/html_response', methods=['GET'])
+def html_response():
+    return """
+    <p>Hello</p>
+    <p>world</p>
+    """
+
+@app.route('/test/xml_response', methods=['GET'])
+def xml_response():
+    headers = {}
+    headers['Content-Type'] = 'xml/application'
+
+    return HTTPResponse(body="TEST XML OK", **headers)
+
+@app.route('/test/json_response', methods=['GET'])
+def json_response():
+    return HTTPResponse(status=201, body={'company_id': "9273892", 'update_companies': 'success'})
 
 
 if __name__ == '__main__':

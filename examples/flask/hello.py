@@ -23,13 +23,13 @@ def get_metadata(app, environ):
 
     try:
         metadata = {
-            'response-body': environ['response-body'],
-            'Content-Type': environ['response-headers']['Content-Type'.lower()],
-            'Content-Length': environ['response-headers']['Content-Length'.lower()],
-            'X-Moesif-Transaction-Id': environ['response-headers']['X-Moesif-Transaction-Id'.lower()]
+            'response-body': environ['moesif-response-body'],
+            'Content-Type': environ['moesif-response-headers']['Content-Type'.lower()],
+            'Content-Length': environ['moesif-response-headers']['Content-Length'.lower()],
+            'X-Moesif-Transaction-Id': environ['moesif-response-headers']['X-Moesif-Transaction-Id'.lower()]
         }
     except KeyError:
-        print('environ has no field [response-body] or [response-headers]')
+        print('environ has no field [moesif-response-body] or [moesif-response-headers]')
 
     return metadata
 
@@ -108,14 +108,31 @@ response = [
 
 @app.route('/test/html_response', methods=['GET'])
 def html_response():
-    return """
-    <p>Hello</p>
-    <p>world</p>
-    """
+    html_text = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+    
+        <h1>My First Heading</h1>
+    
+        <p>My first paragraph.</p>
+    
+        </body>
+        </html>
+        """
+    return Response(response=html_text, status=200, mimetype='text/html')
 
 @app.route('/test/xml_response', methods=['GET'])
 def xml_response():
-    return Response(response='TEST XML OK', status = 200, mimetype='application/xml')
+    xml_text = """
+        <note>
+        <to>Tove</to>
+        <from>Jani</from>
+        <heading>Reminder</heading>
+        <body>Don't forget me this weekend!</body>
+        </note>
+        """
+    return Response(response=xml_text, status = 200, mimetype='application/xml')
 
 @app.route('/test/json_response', methods=['GET'])
 def json_response():

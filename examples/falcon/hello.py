@@ -30,16 +30,32 @@ class HTML_test_resource(object):
         resp.content_type = 'text/html'
 
         resp.body = """
-        <p>Hello</p>
-        <p>world</p>
-        """
+            <!DOCTYPE html>
+            <html>
+            <body>
+        
+            <h1>My First Heading</h1>
+        
+            <p>My first paragraph.</p>
+        
+            </body>
+            </html>
+            """
 
 class XML_test_resource(object):
     def on_get(self, req, resp):
         resp.status = falcon.HTTP_200
         resp.content_type = 'text/xml'
 
-        resp.body = "TEXT XML OK"
+        resp.body = """
+            <note>
+            <to>Tove</to>
+            <from>Jani</from>
+            <heading>Reminder</heading>
+            <body>Don't forget me this weekend!</body>
+            </note>
+            """
+
 
 class Json_test_resource(object):
     def on_get(self, req, resp):
@@ -52,7 +68,7 @@ class Json_test_resource(object):
 
 # falcon.API instances are callable WSGI apps
 # Add the MultipartMiddleware to your api middlewares
-app = falcon.API(middleware=[MultipartMiddleware()],
+app = falcon.App(middleware=[MultipartMiddleware()],
                  independent_middleware=True)
 
 # Resources are represented by long-lived class instances
@@ -87,13 +103,13 @@ def get_metadata(app, environ):
     metadata = None
     try:
         metadata = {
-            'response-body': environ['response-body'],
-            'Content-Type': environ['response-headers']['Content-Type'.lower()],
-            'Content-Length': environ['response-headers']['Content-Length'.lower()],
-            'X-Moesif-Transaction-Id': environ['response-headers']['X-Moesif-Transaction-Id'.lower()]
+            'response-body': environ['moesif-response-body'],
+            'Content-Type': environ['moesif-response-headers']['Content-Type'.lower()],
+            'Content-Length': environ['moesif-response-headers']['Content-Length'.lower()],
+            'X-Moesif-Transaction-Id': environ['moesif-response-headers']['X-Moesif-Transaction-Id'.lower()]
         }
     except KeyError:
-        print('environ has no field [response-body] or [response-headers]')
+        print('environ has no field [moesif-response-body] or [moesif-response-headers]')
     return metadata
 
 

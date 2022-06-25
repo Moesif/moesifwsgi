@@ -5,6 +5,8 @@ import queue
 import random
 import itertools
 import math
+import base64
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -119,7 +121,7 @@ class MoesifMiddleware(object):
                 except Exception as e:
                     print('Error while parsing response headers', e)
 
-                environ['response-headers'] = response_headers_dict
+                environ['moesif-response-headers'] = response_headers_dict
 
             return start_response(status, response_headers, *args)
 
@@ -127,11 +129,18 @@ class MoesifMiddleware(object):
 
         try:
             decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
-            environ['response-body'] = decoded_response_body
+            environ['moesif-response-body'] = decoded_response_body
         except Exception as e:
             print('Error while decoding response body to environ')
+            try:
+                b64body_response_body = ''.join((base64.b64encode(x) for x in response_chunks))
+                environ['moesif-response-body'] = b64body_response_body
+            except Exception as ex:
+                print('Error while encoding base 64 response body to environ')
+            finally:
+                environ['moesif-response-body'] = {}
 
-        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),)
+        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG))
         data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
         data_holder.set_metadata(self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG))
         data_holder.set_session_token(self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG))

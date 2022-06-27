@@ -1,7 +1,11 @@
+import gzip
+
 import falcon
 from falcon_multipart.middleware import MultipartMiddleware
 from moesifwsgi import MoesifMiddleware
-from wsgiref.simple_server import make_server
+import json
+import falcon_jsonify
+
 
 
 # Falcon follows the REST architectural style, meaning (among
@@ -62,14 +66,25 @@ class Json_test_resource(object):
         resp.status = falcon.HTTP_200
         resp.content_type = 'application/json'
 
-        resp.body = """{
-            "foo": "bar"
-        }"""
+        resp.body = json.dumps({'id': 123, 'name': 'work in office'})
+
+class gzip_test_resource(object):
+    def on_get(self, req, resp):
+        resp.status = falcon.HTTP_200
+        resp.content_type = 'gzip'
+
+        very_long_content = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
+        content = gzip.compress(json.dumps(very_long_content).encode('utf-8'), 5)
+        resp.body = content
 
 # falcon.API instances are callable WSGI apps
 # Add the MultipartMiddleware to your api middlewares
-app = falcon.App(middleware=[MultipartMiddleware()],
+app = falcon.App(middleware=[
+    MultipartMiddleware(),
+    falcon_jsonify.Middleware(help_messages=True),
+                             ],
                  independent_middleware=True)
+
 
 # Resources are represented by long-lived class instances
 hello = HelloResource()
@@ -79,6 +94,8 @@ app.add_route('/hello', hello)
 app.add_route('/test/html_response', HTML_test_resource())
 app.add_route('/test/xml_response', XML_test_resource())
 app.add_route('/test/json_response', Json_test_resource())
+app.add_route('/test/gzip_response', gzip_test_resource())
+
 
 def identify_user(app, environ):
     return '12345'
@@ -101,15 +118,24 @@ def should_skip(app, environ):
 
 def get_metadata(app, environ):
     metadata = None
+
+    try:
+        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    except (ValueError):
+        request_body_size = 0
+
+    request_body = environ['wsgi.input'].read(request_body_size)
+
     try:
         metadata = {
+            'request_body': request_body,
             'response-body': environ['moesif-response-body'],
-            'Content-Type': environ['moesif-response-headers']['Content-Type'.lower()],
-            'Content-Length': environ['moesif-response-headers']['Content-Length'.lower()],
-            'X-Moesif-Transaction-Id': environ['moesif-response-headers']['X-Moesif-Transaction-Id'.lower()]
+            'Content-Type': environ['moesif_response_headers']['content-type'],
+            'Content-Length': environ['moesif_response_headers']['content-length'],
+            'X-Moesif-Transaction-Id': environ['moesif_response_headers']['X-Moesif-Transaction-Id']
         }
     except KeyError:
-        print('environ has no field [moesif-response-body] or [moesif-response-headers]')
+        print('environ has no field [moesif_response_body] or [moesif_response_headers]')
     return metadata
 
 
@@ -118,6 +144,7 @@ def mask_event(eventmodel):
     if 'password' in eventmodel.response.body:
         eventmodel.response.body['password'] = None
     return eventmodel
+
 
 moesif_settings = {
     'APPLICATION_ID': 'Your Moesif Application Id',
@@ -135,9 +162,3 @@ moesif_settings = {
 # Add Moesif Middleware
 app = MoesifMiddleware(app, moesif_settings)
 
-if __name__ == '__main__':
-    with make_server('', 8000, app) as httpd:
-        print('Serving on port 8000...')
-
-        # Serve until process is killed
-        httpd.serve_forever()

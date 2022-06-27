@@ -1,3 +1,6 @@
+import gzip
+import json
+
 import bottle
 from bottle import HTTPResponse, request, response
 from moesifwsgi import MoesifMiddleware
@@ -21,15 +24,24 @@ def should_skip(app, environ):
 
 def get_metadata(app, environ):
     metadata = None
+
+    try:
+        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    except (ValueError):
+        request_body_size = 0
+
+    request_body = environ['wsgi.input'].read(request_body_size)
+
     try:
         metadata = {
+            'request_body': request_body,
             'response-body': environ['moesif-response-body'],
-            'Content-Type': environ['moesif-response-headers']['Content-Type'.lower()],
-            'Content-Length': environ['moesif-response-headers']['Content-Length'.lower()],
-            'X-Moesif-Transaction-Id': environ['moesif-response-headers']['X-Moesif-Transaction-Id'.lower()]
+            'Content-Type': environ['moesif_response_headers']['Content-Type'],
+            'Content-Length': environ['moesif_response_headers']['Content-Length'],
+            'X-Moesif-Transaction-Id': environ['moesif_response_headers']['X-Moesif-Transaction-Id']
         }
     except KeyError:
-        print('environ has no field [moesif-response-body] or [moesif-response-body]')
+        print('environ has no field [moesif_response_body] or [moesif_response_headers]')
     return metadata
 
 def mask_event(eventmodel):
@@ -197,6 +209,14 @@ def xml_response():
 def json_response():
     return HTTPResponse(status=201, body={'company_id': "9273892", 'update_companies': 'success'})
 
+@app.route('/test/gzip_response', methods=['POST'])
+def gzip_response():
+    very_long_content = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
+    content = gzip.compress(json.dumps(very_long_content).encode('utf-8'), 5)
+    headers = {'Content-Type': 'gzip',
+               'Content-Encoding': 'gzip'}
+
+    return HTTPResponse(status=201, body=content, **headers)
 
 if __name__ == '__main__':
     bottle.run(app=app.wsgi_app,

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import gzip
 from datetime import datetime, timedelta
 import queue
 import random
@@ -117,11 +117,11 @@ class MoesifMiddleware(object):
                 response_headers_dict = {}
                 try:
                     for pair in response_headers:
-                        response_headers_dict[pair[0].lower()] = pair[1]
+                        response_headers_dict[pair[0]] = pair[1]
                 except Exception as e:
                     print('Error while parsing response headers', e)
 
-                environ['moesif-response-headers'] = response_headers_dict
+                environ['moesif_response_headers'] = response_headers_dict
 
             return start_response(status, response_headers, *args)
 
@@ -129,16 +129,22 @@ class MoesifMiddleware(object):
 
         try:
             decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
-            environ['moesif-response-body'] = decoded_response_body
+
+            if self.parse_body.start_with_json(decoded_response_body):
+                environ['moesif-response-body'] = decoded_response_body
+            else:
+                b64body_response_body = ''.join((base64.standard_b64encode(x).decode(encoding="UTF-8") for x in response_chunks))
+                environ['moesif-response-body'] = b64body_response_body
         except Exception as e:
-            print('Error while decoding response body to environ')
+            print('Error while decoding response body to environ {}, try to encode to base 64 as gzip'.format(e))
             try:
-                b64body_response_body = ''.join((base64.b64encode(x) for x in response_chunks))
+                doc = ''.join((gzip.decompress(x).decode('utf-8') for x in response_chunks))
+                b64body_response_body = ''.join(
+                    (base64.standard_b64encode(x.encode('utf-8')).decode(encoding="UTF-8") for x in doc))
                 environ['moesif-response-body'] = b64body_response_body
             except Exception as ex:
-                print('Error while encoding base 64 response body to environ')
-            finally:
-                environ['moesif-response-body'] = {}
+                print('Error while encoding base 64 response body to environ', e)
+
 
         data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG))
         data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))

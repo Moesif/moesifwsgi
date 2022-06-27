@@ -1,5 +1,7 @@
 from moesifwsgi import MoesifMiddleware
 from flask import Flask, jsonify, abort, make_response, request, Response
+import gzip
+import json
 
 app = Flask(__name__)
 
@@ -20,16 +22,26 @@ def should_skip(app, environ):
 
 def get_metadata(app, environ):
     metadata = None
-
     try:
+        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    except (ValueError):
+        request_body_size = 0
+
+        # When the method is POST the variable will be sent
+        # in the HTTP request body which is passed by the WSGI server
+        # in the file like wsgi.input environment variable.
+    request_body = environ['wsgi.input'].read(request_body_size)
+    try:
+        print('environ: ', environ)
         metadata = {
+            'request_body': request_body,
             'response-body': environ['moesif-response-body'],
-            'Content-Type': environ['moesif-response-headers']['Content-Type'.lower()],
-            'Content-Length': environ['moesif-response-headers']['Content-Length'.lower()],
-            'X-Moesif-Transaction-Id': environ['moesif-response-headers']['X-Moesif-Transaction-Id'.lower()]
+            'Content-Type': environ['moesif_response_headers']['Content-Type'],
+            'Content-Length': environ['moesif_response_headers']['Content-Length'],
+            'X-Moesif-Transaction-Id': environ['moesif_response_headers']['X-Moesif-Transaction-Id']
         }
     except KeyError:
-        print('environ has no field [moesif-response-body] or [moesif-response-headers]')
+        print('environ has no field [moesif_response_body] or [moesif_response_headers]')
 
     return metadata
 
@@ -40,7 +52,7 @@ def mask_event(eventmodel):
     return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your Moesif Application Id',
+    'APPLICATION_ID': 'eyJhcHAiOiI5Mzo1NjQiLCJ2ZXIiOiIyLjAiLCJvcmciOiIyNjI6NTQ5IiwiaWF0IjoxNjU0MDQxNjAwfQ.s9DDjJrK7GMFiZphtobKYNCfyw_R4M1akMqUWNFw0JU',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,
@@ -70,7 +82,6 @@ def show_user_profile(username):
 def show_post(post_id):
     # show the post with the given id, the id is an integer
     return 'Post %d' % post_id
-
 
 tasks = [
     {
@@ -137,6 +148,17 @@ def xml_response():
 @app.route('/test/json_response', methods=['GET'])
 def json_response():
     return jsonify({'response': response})
+
+# Handle posted data
+@app.route('/test/gzip_response', methods = ['POST'])
+def post_gzip():
+    # very_long_content = "content"
+    very_long_content = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
+    content = gzip.compress(json.dumps(very_long_content).encode('utf-8'), 5)
+    response = make_response(content)
+    response.headers['Content-Length'] = len(content)
+    response.headers['Content-Encoding'] = 'gzip'
+    return response
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):

@@ -66,7 +66,7 @@ class Json_test_resource(object):
         resp.status = falcon.HTTP_200
         resp.content_type = 'application/json'
 
-        resp.body = json.dumps({'id': 123, 'name': 'work in office'})
+        resp.body = json.dumps({'foo': 'bar'})
 
 class gzip_test_resource(object):
     def on_get(self, req, resp):

@@ -27,9 +27,6 @@ def get_metadata(app, environ):
     except (ValueError):
         request_body_size = 0
 
-        # When the method is POST the variable will be sent
-        # in the HTTP request body which is passed by the WSGI server
-        # in the file like wsgi.input environment variable.
     request_body = environ['wsgi.input'].read(request_body_size)
     try:
         print('environ: ', environ)
@@ -52,7 +49,7 @@ def mask_event(eventmodel):
     return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'eyJhcHAiOiI5Mzo1NjQiLCJ2ZXIiOiIyLjAiLCJvcmciOiIyNjI6NTQ5IiwiaWF0IjoxNjU0MDQxNjAwfQ.s9DDjJrK7GMFiZphtobKYNCfyw_R4M1akMqUWNFw0JU',
+    'APPLICATION_ID': 'Your Moesif Application Id',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,

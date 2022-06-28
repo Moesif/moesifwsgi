@@ -127,6 +127,7 @@ but different frameworks and your implementation might be very different, it wou
 returns a dictionary (must be able to be encoded into JSON). This allows your
 to associate this event with custom metadata. For example, you may want to save a VM instance_id, a trace_id, or a tenant_id with the request.
 The custom metadata can include response body and response headers from environ
+where the custom response body could be json or base64 encoded.
 ```
 environ['moesif_response_body'] # get response body
 environ['moesif_response_headers'] # get response headers

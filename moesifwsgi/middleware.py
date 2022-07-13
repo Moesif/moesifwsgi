@@ -109,45 +109,24 @@ class MoesifMiddleware(object):
                         *self.logger_helper.request_body(environ)
                     )
 
+        response_headers_mapping = {}
         def _start_response(status, response_headers, *args):
             # Capture status and response_headers for later processing
             data_holder.capture_response_status(status, response_headers)
 
             if response_headers:
-                response_headers_dict = {}
                 try:
                     for pair in response_headers:
-                        response_headers_dict[pair[0]] = pair[1]
+                        response_headers_mapping[pair[0]] = pair[1]
                 except Exception as e:
                     print('Error while parsing response headers', e)
-
-                environ['moesif_response_headers'] = response_headers_dict
 
             return start_response(status, response_headers, *args)
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
 
-        try:
-            decoded_response_body = ''.join((x.decode('utf-8') for x in response_chunks))
-
-            if self.parse_body.start_with_json(decoded_response_body):
-                environ['moesif-response-body'] = decoded_response_body
-            else:
-                b64body_response_body = ''.join((base64.standard_b64encode(x).decode(encoding="UTF-8") for x in response_chunks))
-                environ['moesif-response-body'] = b64body_response_body
-        except Exception as e:
-            print('Error while decoding response body to environ {}, try to encode to base 64 as gzip'.format(e))
-            try:
-                doc = ''.join((gzip.decompress(x).decode('utf-8') for x in response_chunks))
-                b64body_response_body = ''.join(
-                    (base64.standard_b64encode(x.encode('utf-8')).decode(encoding="UTF-8") for x in doc))
-                environ['moesif-response-body'] = b64body_response_body
-            except Exception as ex:
-                print('Error while encoding base 64 response body to environ', e)
-
-
-        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG))
-        data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
+        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
+        data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
         data_holder.set_metadata(self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG))
         data_holder.set_session_token(self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG))
 
@@ -162,8 +141,12 @@ class MoesifMiddleware(object):
                 event_data = self.process_data(data_holder)
 
                 self.sampling_percentage = self.app_config.get_sampling_percentage(event_data, self.config,
-                                                                                   self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),
-                                                                                   self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
+                                                                                   self.logger_helper.get_user_id(
+                                                                                       environ, self.settings, self.app,
+                                                                                       self.DEBUG, response_headers_mapping),
+                                                                                   self.logger_helper.get_company_id(
+                                                                                       environ, self.settings, self.app,
+                                                                                       self.DEBUG, response_headers_mapping))
 
                 if self.sampling_percentage >= random_percentage:
                     if event_data:

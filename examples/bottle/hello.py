@@ -7,10 +7,10 @@ from moesifwsgi import MoesifMiddleware
 
 app = application = bottle.Bottle()
 
-def identify_user(app, environ):
+def identify_user(app, environ, response_headers=dict()):
     return '12345'
 
-def identify_company(app, environ):
+def identify_company(app, environ, response_headers=dict()):
     return '67890'
 
 def get_token(app, environ):
@@ -23,26 +23,11 @@ def should_skip(app, environ):
     return "health/probe" in environ.get('PATH_INFO', '')
 
 def get_metadata(app, environ):
-    metadata = None
+    return {
+        'datacenter': 'westus',
+        'deployment_version': 'v1.2.3',
+    }
 
-    try:
-        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
-    except (ValueError):
-        request_body_size = 0
-
-    request_body = environ['wsgi.input'].read(request_body_size)
-
-    try:
-        metadata = {
-            'request_body': request_body,
-            'response-body': environ['moesif-response-body'],
-            'Content-Type': environ['moesif_response_headers']['Content-Type'],
-            'Content-Length': environ['moesif_response_headers']['Content-Length'],
-            'X-Moesif-Transaction-Id': environ['moesif_response_headers']['X-Moesif-Transaction-Id']
-        }
-    except KeyError:
-        print('environ has no field [moesif_response_body] or [moesif_response_headers]')
-    return metadata
 
 def mask_event(eventmodel):
     # Your custom code to change or remove any sensitive fields

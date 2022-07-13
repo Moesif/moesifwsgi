@@ -103,12 +103,12 @@ class LoggerHelper:
                 print(e)
         return None
 
-    def get_user_id(self, environ, settings, app, debug):
+    def get_user_id(self, environ, settings, app, debug, response_headers=dict()):
         username = None
         try:
             identify_user = settings.get("IDENTIFY_USER")
             if identify_user is not None:
-                username = identify_user(app, environ)
+                username = identify_user(app, environ, response_headers)
             if not username:
                 # Parse request headers
                 request_headers = dict([(k.lower(), v) for k, v in self.parse_request_headers(environ)])
@@ -173,12 +173,12 @@ class LoggerHelper:
         return username
 
     @classmethod
-    def get_company_id(cls, environ, settings, app, debug):
+    def get_company_id(cls, environ, settings, app, debug, response_headers=dict()):
         company_id = None
         try:
             identify_company = settings.get("IDENTIFY_COMPANY")
             if identify_company is not None:
-                company_id = identify_company(app, environ)
+                company_id = identify_company(app, environ, response_headers)
         except Exception as e:
             if debug:
                 print("can not execute identify_company function, please check moesif settings.")

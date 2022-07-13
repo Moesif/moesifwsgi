@@ -116,22 +116,16 @@ and returns true if you want to skip this particular event. The app is the origi
 environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
 
 #### __`IDENTIFY_USER`__
-(optional, but highly recommended) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
+(optional, but highly recommended) _(app, environ, response_headers) => string_, a function that takes an app, an environ and an optional parameter response headers, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,
 but different frameworks and your implementation might be very different, it would be helpful and much more accurate to provide this function.
 
 #### __`IDENTIFY_COMPANY`__
-(optional) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the company id for this event.
+(optional) _(app, environ, response_headers) => string_, a function that takes an app, an environ and an optional parameter response headers, and returns a string that is the company id for this event.
 
 #### __`GET_METADATA`__
 (optional) _(app, environ) => dictionary_, a function that takes an app and an environ, and
 returns a dictionary (must be able to be encoded into JSON). This allows your
 to associate this event with custom metadata. For example, you may want to save a VM instance_id, a trace_id, or a tenant_id with the request.
-The custom metadata can include response body and response headers from environ
-where the custom response body could be json or base64 encoded.
-```
-environ['moesif_response_body'] # get response body
-environ['moesif_response_headers'] # get response headers
-```
 
 #### __`GET_SESSION_TOKEN`__
 (optional) _(app, environ) => string_, a function that takes an app and an environ, and returns a string that is the session token for this event. Again, Moesif tries to get the session token automatically, but if you setup is very different from standard, this function will be very help for tying events together, and help you replay the events.
@@ -193,11 +187,11 @@ but different frameworks and your implementation might be very different, it wou
 ### Example:
 
 ```python
-def identify_user(app, environ):
+def identify_user(app, environ, response_headers=dict()):
     # Your custom code that returns a user id string
     return "12345"
 
-def identify_company(app, environ):
+def identify_company(app, environ, response_headers=dict()):
     # Your custom code that returns a company id string
     return "67890"
 

@@ -64,22 +64,28 @@ def check_login(user, psword):
 
 @app.get('/login')
 def login():
-    return HTTPResponse(body='''
+    body = '''
         <form action="/login" method="post">
             Username: <input name="username" type="text" />
             Password: <input name="password" type="password" />
             <input value="Login" type="submit" />
         </form>
-    ''', status=201)
+    '''
+    headers = {'Content-Type': 'application/html'}
+    return HTTPResponse(status=201, body=body, **headers)
 
 @app.post('/login')
 def do_login():
     username = request.forms.get('username')
     password = request.forms.get('password')
+    body = ''
     if check_login(username, password):
-        return "<p>Your login information was correct.</p>"
+        body = "<p>Your login information was correct.</p>"
     else:
-        return "<p>Login failed.</p>"
+        body = "<p>Login failed.</p>"
+
+    headers = {'Content-Type': 'application/html'}
+    return HTTPResponse(status=201, body=body, **headers)
 
 @app.post('/users/<id>')
 def update_users(id):
@@ -105,7 +111,8 @@ def update_users(id):
             }
         }
     })
-    return HTTPResponse(status=201, body={'user_id': id, 'update_users': 'success'})
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'user_id': id, 'update_users': 'success'}, **headers)
 
 @app.post('/companies/<id>')
 def update_companies(id):
@@ -130,7 +137,8 @@ def update_companies(id):
                 }
             }
         })
-    return HTTPResponse(status=201, body={'company_id': id, 'update_companies': 'success'})
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'company_id': id, 'update_companies': 'success'}, **headers)
 
 @app.route('/iso')
 def get_iso():
@@ -173,8 +181,7 @@ def html_response():
         """
 
     headers = {'Content-Type': 'application/html'}
-
-    return HTTPResponse(body=html_text, **headers)
+    return HTTPResponse(status=201, body=html_text, **headers)
 
 @app.route('/test/xml_response', methods=['GET'])
 def xml_response():
@@ -188,11 +195,12 @@ def xml_response():
         """
 
     headers = {'Content-Type': 'xml/application'}
-    return HTTPResponse(body=xml_text, **headers)
+    return HTTPResponse(status=201, body=xml_text, **headers)
 
 @app.route('/test/json_response', methods=['GET'])
 def json_response():
-    return HTTPResponse(status=201, body={'company_id': "9273892", 'update_companies': 'success'})
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'company_id': "9273892", 'update_companies': 'success'}, **headers)
 
 @app.route('/test/gzip_response', methods=['POST'])
 def gzip_response():

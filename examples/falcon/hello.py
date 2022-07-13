@@ -15,6 +15,7 @@ class HelloResource(object):
     def on_get(self, req, resp):
         """Handles GET requests"""
         resp.status = falcon.HTTP_200  # This is the default status
+        resp.content_type = 'text'
         resp.body = ('\nTwo things awe me most, the starry sky '
                      'above me and the moral law within me.\n'
                      '\n'
@@ -23,6 +24,7 @@ class HelloResource(object):
     def on_post(self, req, resp, **kwargs):
         """Handles POST requests"""
         resp.status = falcon.HTTP_201  # This is the default status
+        resp.content_type = 'text'
         resp.body = ('\nTwo things awe me most, the starry sky '
                      'above me and the moral law within me.\n'
                      '\n'
@@ -32,7 +34,6 @@ class HTML_test_resource(object):
     def on_get(self, req, resp):
         resp.status = falcon.HTTP_200
         resp.content_type = 'text/html'
-
         resp.body = """
             <!DOCTYPE html>
             <html>
@@ -50,7 +51,6 @@ class XML_test_resource(object):
     def on_get(self, req, resp):
         resp.status = falcon.HTTP_200
         resp.content_type = 'text/xml'
-
         resp.body = """
             <note>
             <to>Tove</to>
@@ -65,14 +65,12 @@ class Json_test_resource(object):
     def on_get(self, req, resp):
         resp.status = falcon.HTTP_200
         resp.content_type = 'application/json'
-
         resp.body = json.dumps({'foo': 'bar'})
 
 class gzip_test_resource(object):
     def on_get(self, req, resp):
         resp.status = falcon.HTTP_200
         resp.content_type = 'gzip'
-
         very_long_content = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
         content = gzip.compress(json.dumps(very_long_content).encode('utf-8'), 5)
         resp.body = content

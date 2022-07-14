@@ -1,4 +1,4 @@
 moesifwsgi
-falcon
+falcon==3.1.0
 gunicorn
 falcon-multipart

@@ -1,13 +1,16 @@
+import gzip
+import json
+
 import bottle
 from bottle import HTTPResponse, request, response
 from moesifwsgi import MoesifMiddleware
 
 app = application = bottle.Bottle()
 
-def identify_user(app, environ):
+def identify_user(app, environ, response_headers=dict()):
     return '12345'
 
-def identify_company(app, environ):
+def identify_company(app, environ, response_headers=dict()):
     return '67890'
 
 def get_token(app, environ):
@@ -24,6 +27,7 @@ def get_metadata(app, environ):
         'datacenter': 'westus',
         'deployment_version': 'v1.2.3',
     }
+
 
 def mask_event(eventmodel):
     # Your custom code to change or remove any sensitive fields
@@ -60,22 +64,30 @@ def check_login(user, psword):
 
 @app.get('/login')
 def login():
-    return HTTPResponse(body='''
+    body = '''
         <form action="/login" method="post">
             Username: <input name="username" type="text" />
             Password: <input name="password" type="password" />
             <input value="Login" type="submit" />
         </form>
-    ''', status=201)
+    '''
+    headers = {'Content-Type': 'application/html'}
+    return HTTPResponse(status=201, body=body, **headers)
 
 @app.post('/login')
 def do_login():
     username = request.forms.get('username')
     password = request.forms.get('password')
+    body = ''
+    status = 201
     if check_login(username, password):
-        return "<p>Your login information was correct.</p>"
+        body = "<p>Your login information was correct.</p>"
     else:
-        return "<p>Login failed.</p>"
+        body = "<p>Login failed.</p>"
+        status = 403
+
+    headers = {'Content-Type': 'application/html'}
+    return HTTPResponse(status=status, body=body, **headers)
 
 @app.post('/users/<id>')
 def update_users(id):
@@ -101,7 +113,8 @@ def update_users(id):
             }
         }
     })
-    return HTTPResponse(status=201, body={'user_id': id, 'update_users': 'success'})
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'user_id': id, 'update_users': 'success'}, **headers)
 
 @app.post('/companies/<id>')
 def update_companies(id):
@@ -126,7 +139,8 @@ def update_companies(id):
                 }
             }
         })
-    return HTTPResponse(status=201, body={'company_id': id, 'update_companies': 'success'})
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'company_id': id, 'update_companies': 'success'}, **headers)
 
 @app.route('/iso')
 def get_iso():
@@ -138,6 +152,66 @@ def get_latin():
     response.content_type = 'text/html; charset=latin9'
     return u'ISO-8859-15 is also known as latin9.'
 
+response = [
+    {
+        'id': 1,
+        'title': u'Buy groceries',
+        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol',
+        'done': False
+    },
+    {
+        'id': 2,
+        'title': u'Learn Python',
+        'description': u'Need to find a good Python tutorial on the web',
+        'done': False
+    }
+]
+
+@app.route('/test/html_response', methods=['GET'])
+def html_response():
+    html_text = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+    
+        <h1>My First Heading</h1>
+    
+        <p>My first paragraph.</p>
+    
+        </body>
+        </html>
+        """
+
+    headers = {'Content-Type': 'application/html'}
+    return HTTPResponse(status=201, body=html_text, **headers)
+
+@app.route('/test/xml_response', methods=['GET'])
+def xml_response():
+    xml_text = """
+        <note>
+        <to>Tove</to>
+        <from>Jani</from>
+        <heading>Reminder</heading>
+        <body>Don't forget me this weekend!</body>
+        </note>
+        """
+
+    headers = {'Content-Type': 'xml/application'}
+    return HTTPResponse(status=201, body=xml_text, **headers)
+
+@app.route('/test/json_response', methods=['GET'])
+def json_response():
+    headers = {'Content-Type': 'application/json'}
+    return HTTPResponse(status=201, body={'company_id': "9273892", 'update_companies': 'success'}, **headers)
+
+@app.route('/test/gzip_response', methods=['POST'])
+def gzip_response():
+    very_long_content = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
+    content = gzip.compress(json.dumps(very_long_content).encode('utf-8'), 5)
+    headers = {'Content-Type': 'gzip',
+               'Content-Encoding': 'gzip'}
+
+    return HTTPResponse(status=201, body=content, **headers)
 
 if __name__ == '__main__':
     bottle.run(app=app.wsgi_app,

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-
+import gzip
 from datetime import datetime, timedelta
 import queue
 import random
 import itertools
 import math
+import base64
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -103,20 +105,30 @@ class MoesifMiddleware(object):
                         environ['REQUEST_METHOD'],
                         self.logger_helper.request_url(environ),
                         self.client_ip.get_client_address(environ),
-                        self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG),
-                        self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG),
                         [(k, v) for k,v in self.logger_helper.parse_request_headers(environ)],
                         *self.logger_helper.request_body(environ)
                     )
 
+        response_headers_mapping = {}
         def _start_response(status, response_headers, *args):
             # Capture status and response_headers for later processing
             data_holder.capture_response_status(status, response_headers)
+
+            if response_headers:
+                try:
+                    for pair in response_headers:
+                        response_headers_mapping[pair[0]] = pair[1]
+                except Exception as e:
+                    print('Error while parsing response headers', e)
+
             return start_response(status, response_headers, *args)
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
+
+        data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
+        data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
+        data_holder.set_metadata(self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG))
+        data_holder.set_session_token(self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG))
 
         # return data to WSGI server
         try:
@@ -129,8 +141,12 @@ class MoesifMiddleware(object):
                 event_data = self.process_data(data_holder)
 
                 self.sampling_percentage = self.app_config.get_sampling_percentage(event_data, self.config,
-                                                                                   self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG),
-                                                                                   self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG))
+                                                                                   self.logger_helper.get_user_id(
+                                                                                       environ, self.settings, self.app,
+                                                                                       self.DEBUG, response_headers_mapping),
+                                                                                   self.logger_helper.get_company_id(
+                                                                                       environ, self.settings, self.app,
+                                                                                       self.DEBUG, response_headers_mapping))
 
                 if self.sampling_percentage >= random_percentage:
                     if event_data:

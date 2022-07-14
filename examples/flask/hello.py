@@ -34,7 +34,7 @@ def mask_event(eventmodel):
     return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your Moesif Application Id',
+    'APPLICATION_ID': 'eyJhcHAiOiI3MTA6NzEyIiwidmVyIjoiMi4wIiwib3JnIjoiMjYyOjU0OSIsImlhdCI6MTY1NjYzMzYwMH0.CiU4oW_PuDXhLM8_scQktI_wrqZcu3GAFxUMb0DyQCc',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,
@@ -196,7 +196,7 @@ def html_response():
         </body>
         </html>
         """
-    return Response(response=html_body, status=201, mimetype='text/html')
+    return Response(response=html_body, status=200, mimetype='text/html')
 
 
 @app.route('/test/xml_response', methods=['GET'])
@@ -209,7 +209,7 @@ def xml_response():
         <body>Don't forget me this weekend!</body>
         </note>
         """
-    return Response(response=xml_body, status=201, mimetype='application/xml')
+    return Response(response=xml_body, status=200, mimetype='application/xml')
 
 
 @app.route('/test/json_response', methods=['GET'])

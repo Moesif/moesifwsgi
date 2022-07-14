@@ -79,13 +79,15 @@ def do_login():
     username = request.forms.get('username')
     password = request.forms.get('password')
     body = ''
+    status = 201
     if check_login(username, password):
         body = "<p>Your login information was correct.</p>"
     else:
         body = "<p>Login failed.</p>"
+        status = 403
 
     headers = {'Content-Type': 'application/html'}
-    return HTTPResponse(status=201, body=body, **headers)
+    return HTTPResponse(status=status, body=body, **headers)
 
 @app.post('/users/<id>')
 def update_users(id):

@@ -67,7 +67,7 @@ class AppConfig:
             except Exception as e:
                 print("Error while parsing user or company sample rate")
                 print(e)
-                return 100
-        else:
-            return 100
+
+        # Use default
+        return 100
 

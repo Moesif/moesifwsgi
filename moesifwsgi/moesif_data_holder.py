@@ -4,7 +4,7 @@ import uuid
 
 class DataHolder(object):
     """Capture the data for a request-response."""
-    def __init__(self, disable_capture_transaction_id, id, method, url, ip, request_headers, content_length, request_body, transfer_encoding):
+    def __init__(self, disable_capture_transaction_id, id, method, url, ip, request_headers, content_length, request_body, transfer_encoding, request_time):
         self.request_id = id
         self.method = method
         self.url = url
@@ -21,7 +21,7 @@ class DataHolder(object):
         self.response_headers = None
         self.response_chunks = None
         self.response_body_data = None
-        self.request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        self.request_time = request_time
         self.start_at = time.time()
         self.transaction_id = None
 

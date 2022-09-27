@@ -99,6 +99,10 @@ class MoesifMiddleware(object):
             return settings.get(deprecated_field, 'https://api.moesif.net')
 
     def __call__(self, environ, start_response):
+        request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        if self.DEBUG:
+            print("event request time: ", request_time)
+
         data_holder = DataHolder(
                         self.settings.get('DISABLED_TRANSACTION_ID', False),
                         self.request_counter(),
@@ -106,7 +110,8 @@ class MoesifMiddleware(object):
                         self.logger_helper.request_url(environ),
                         self.client_ip.get_client_address(environ),
                         [(k, v) for k,v in self.logger_helper.parse_request_headers(environ)],
-                        *self.logger_helper.request_body(environ)
+                        *self.logger_helper.request_body(environ),
+                        request_time
                     )
 
         response_headers_mapping = {}
@@ -124,6 +129,11 @@ class MoesifMiddleware(object):
             return start_response(status, response_headers, *args)
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
+        if self.DEBUG:
+            try:
+                print("event response time: ", data_holder.response_time)
+            except Exception as e:
+                print("Error while fetching response time", e)
 
         data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
         data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))

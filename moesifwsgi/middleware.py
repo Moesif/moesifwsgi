@@ -14,7 +14,7 @@ except ImportError:
 from moesifapi.moesif_api_client import *
 from .update_companies import Company
 from .update_users import User
-from .app_config import AppConfig
+from moesifpythonrequest.app_config.app_config import AppConfig
 from .parse_body import ParseBody
 from .logger_helper import LoggerHelper
 from .moesif_data_holder import DataHolder

@@ -1,3 +1,5 @@
+import os
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -234,3 +236,7 @@ class LoggerHelper:
             if debug:
                 print("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.")
         return event_model
+
+    @classmethod
+    def get_worker_pid(cls):
+        return str(os.getpid())

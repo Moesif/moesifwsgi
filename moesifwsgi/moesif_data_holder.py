@@ -1,6 +1,7 @@
 from datetime import datetime
 import time
 import uuid
+from .logger_helper import LoggerHelper
 
 class DataHolder(object):
     """Capture the data for a request-response."""
@@ -24,6 +25,7 @@ class DataHolder(object):
         self.request_time = request_time
         self.start_at = time.time()
         self.transaction_id = None
+        self.logger_helper = LoggerHelper()
 
         if not disable_capture_transaction_id:
             req_trans_id = [value for key, value in request_headers if key == "X-Moesif-Transaction-Id"]
@@ -48,11 +50,14 @@ class DataHolder(object):
     def set_session_token(self, session_token):
         self.session_token = session_token
 
-    def capture_response_status(self, status, response_headers):
+    def capture_response_status(self, status, response_headers, debug):
         self.status = status
         # Add transaction id to the response header
         if self.transaction_id:
             response_headers.append(("X-Moesif-Transaction-Id", self.transaction_id))
+        # Add worker process Id
+        if debug:
+            response_headers.append(("X-Moesif-Wsgi-Pid", self.logger_helper.get_worker_pid()))
         self.response_headers = response_headers
 
     def capture_body_data(self, body_data):

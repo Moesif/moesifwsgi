@@ -110,7 +110,11 @@ class LoggerHelper:
         try:
             identify_user = settings.get("IDENTIFY_USER")
             if identify_user is not None:
-                username = identify_user(app, environ, response_headers)
+                try:
+                    username = identify_user(app, environ, response_headers)
+                except Exception as e:
+                    print("Exception in identify_user function, please check your identify_user method ")
+                    print(e)
             if not username:
                 # Parse request headers
                 request_headers = dict([(k.lower(), v) for k, v in self.parse_request_headers(environ)])

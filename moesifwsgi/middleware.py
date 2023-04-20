@@ -251,9 +251,8 @@ class MoesifMiddleware(object):
                 # Exit handler when exiting the app
                 atexit.register(lambda: self.send_async_events.exit_handler(self.scheduler, self.DEBUG))
         except Exception as ex:
-            if self.DEBUG:
-                print("Error when scheduling the job for pid - " + self.logger_helper.get_worker_pid())
-                print(str(ex))
+            print("Error when scheduling the job for pid - " + self.logger_helper.get_worker_pid())
+            print(str(ex))
 
     def update_user(self, user_profile):
         User().update_user(user_profile, self.api_client, self.DEBUG)

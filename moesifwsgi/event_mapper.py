@@ -1,11 +1,13 @@
 from moesifapi.models import *
 from .parse_body import ParseBody
+from .logger_helper import LoggerHelper
 
 
 class EventMapper:
 
     def __init__(self):
         self.parse_body = ParseBody()
+        self.logger_helper = LoggerHelper()
 
     @classmethod
     def to_event(cls, data, event_req, event_rsp):
@@ -50,7 +52,7 @@ class EventMapper:
                 response_content = b"".join(data.response_chunks)
             except:
                 if debug:
-                    print('try to join response chunks failed - ')
+                    print('try to join response chunks failed - for pid - ' + self.logger_helper.get_worker_pid())
 
         rsp_headers = None
         if data.response_headers:
@@ -60,7 +62,7 @@ class EventMapper:
         rsp_transfer_encoding = None
         if log_body and response_content:
             if debug:
-                print("about to process response")
+                print("about to process response for pid - " + self.logger_helper.get_worker_pid())
                 print(response_content)
             if isinstance(response_content, str):
                 rsp_body, rsp_transfer_encoding = self.parse_body.parse_string_body(response_content, None,

@@ -50,16 +50,17 @@ class MoesifMiddleware(object):
 
         if settings.get('DEBUG', False):
             Configuration.BASE_URI = self.get_configuration_uri(settings, 'BASE_URI', 'LOCAL_MOESIF_BASEURL')
-        Configuration.version = 'moesifwsgi-python/1.3.5'
+        Configuration.version = 'moesifwsgi-python/1.6.1'
         self.DEBUG = settings.get('DEBUG', False)
+        self.logger_helper = LoggerHelper()
         if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
             try:
                 if self.DEBUG:
-                    print('Start capturing outgoing requests')
+                    print('Start capturing outgoing requests for pid - ' + self.logger_helper.get_worker_pid())
                 # Start capturing outgoing requests
                 StartCapture().start_capture_outgoing(settings)
             except:
-                print('Error while starting to capture the outgoing events')
+                print('Error while starting to capture the outgoing events for pid - ' + self.logger_helper.get_worker_pid())
         self.api_version = settings.get('API_VERSION')
         self.api_client = self.client.api
         self.LOG_BODY = self.settings.get('LOG_BODY', True)
@@ -69,7 +70,6 @@ class MoesifMiddleware(object):
         self.client_ip = ClientIp()
         self.app_config = AppConfig()
         self.parse_body = ParseBody()
-        self.logger_helper = LoggerHelper()
         self.event_mapper = EventMapper()
         self.send_async_events = SendEventAsync()
         self.config_etag = None
@@ -87,7 +87,7 @@ class MoesifMiddleware(object):
                     self.config, self.DEBUG)
         except Exception as ex:
             if self.DEBUG:
-                print('Error while parsing application configuration on initialization')
+                print('Error while parsing application configuration on initialization for pid - ' + self.logger_helper.get_worker_pid())
                 print(str(ex))
 
     # Function to get configuration uri
@@ -117,23 +117,23 @@ class MoesifMiddleware(object):
         response_headers_mapping = {}
         def _start_response(status, response_headers, *args):
             # Capture status and response_headers for later processing
-            data_holder.capture_response_status(status, response_headers)
+            data_holder.capture_response_status(status, response_headers, self.DEBUG)
 
             if response_headers:
                 try:
                     for pair in response_headers:
                         response_headers_mapping[pair[0]] = pair[1]
                 except Exception as e:
-                    print('Error while parsing response headers', e)
+                    print('Error while parsing response headers for pid - ' + self.logger_helper.get_worker_pid(), e)
 
             return start_response(status, response_headers, *args)
 
         response_chunks = data_holder.finish_response(self.app(environ, _start_response))
         if self.DEBUG:
             try:
-                print("event response time: ", data_holder.response_time)
+                print("event response time for pid - " + self.logger_helper.get_worker_pid(), data_holder.response_time)
             except Exception as e:
-                print("Error while fetching response time", e)
+                print("Error while fetching response time for pid - " + self.logger_helper.get_worker_pid(), e)
 
         data_holder.set_user_id(self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
         data_holder.set_company_id(self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping))
@@ -172,25 +172,27 @@ class MoesifMiddleware(object):
                                 except Exception as ex:
                                     self.is_event_job_scheduled = False
                                     if self.DEBUG:
-                                        print('Error while starting the event scheduler job in background')
+                                        print('Error while starting the event scheduler job in background for pid - '
+                                              + self.logger_helper.get_worker_pid())
                                         print(str(ex))
                             # Add Event to the queue
                             if self.DEBUG:
-                                print('Add Event to the queue')
+                                print('Add Event to the queue for pid - ' + self.logger_helper.get_worker_pid())
                             self.moesif_events_queue.put(event_data)
                         except Exception as ex:
                             if self.DEBUG:
-                                print("Error while adding event to the queue")
+                                print("Error while adding event to the queue for pid - " + self.logger_helper.get_worker_pid())
                                 print(str(ex))
                     else:
                         if self.DEBUG:
-                            print('Skipped Event as the moesif event model is None')
+                            print('Skipped Event as the moesif event model is None for pid - ' + self.logger_helper.get_worker_pid())
                 else:
                     if self.DEBUG:
-                        print("Skipped Event due to sampling percentage: " + str(self.sampling_percentage) + " and random percentage: " + str(random_percentage))
+                        print("Skipped Event due to sampling percentage: " + str(self.sampling_percentage)
+                              + " and random percentage: " + str(random_percentage) + " for pid - " + self.logger_helper.get_worker_pid())
             else:
                 if self.DEBUG:
-                    print('Skipped Event using should_skip configuration option')
+                    print('Skipped Event using should_skip configuration option for pid - ' + self.logger_helper.get_worker_pid())
 
     def process_data(self, data):
 
@@ -210,7 +212,7 @@ class MoesifMiddleware(object):
     def moesif_event_listener(self, event):
         if event.exception:
             if self.DEBUG:
-                print('Error reading response from the scheduled job')
+                print('Error reading response from the scheduled job for pid - ' + self.logger_helper.get_worker_pid())
         else:
             if event.retval:
                 response_etag, self.last_event_job_run_time = event.retval
@@ -224,7 +226,7 @@ class MoesifMiddleware(object):
                             self.config, self.DEBUG)
                     except Exception as ex:
                         if self.DEBUG:
-                            print('Error while updating the application configuration')
+                            print('Error while updating the application configuration for pid - ' + self.logger_helper.get_worker_pid())
                             print(str(ex))
 
     def schedule_background_job(self):
@@ -249,9 +251,8 @@ class MoesifMiddleware(object):
                 # Exit handler when exiting the app
                 atexit.register(lambda: self.send_async_events.exit_handler(self.scheduler, self.DEBUG))
         except Exception as ex:
-            if self.DEBUG:
-                print("Error when scheduling the job")
-                print(str(ex))
+            print("Error when scheduling the job for pid - " + self.logger_helper.get_worker_pid())
+            print(str(ex))
 
     def update_user(self, user_profile):
         User().update_user(user_profile, self.api_client, self.DEBUG)

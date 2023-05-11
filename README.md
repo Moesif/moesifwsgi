@@ -139,8 +139,11 @@ to associate this event with custom metadata. For example, you may want to save 
 #### __`LOG_BODY`__
 (optional) _boolean_, default True, Set to False to remove logging request and response body.
 
+#### __`EVENT_QUEUE_SIZE`__
+(optional) __int__, default 100000, the maximum number of event objects queued in memory pending upload to Moesif.  If the queue is full additional calls to `MoesifMiddleware` will return immediately without logging the event, so this number should be set based on the expected event size and memory capacity
+
 #### __`BATCH_SIZE`__
-(optional) __int__, default 25, Maximum batch size when sending events to Moesif.
+(optional) __int__, default 100, Maximum batch size when sending events to Moesif when reading from the queue
 
 #### __`AUTHORIZATION_HEADER_NAME`__
 (optional) _string_, A request header field name used to identify the User in Moesif. Default value is `authorization`. Also, supports a comma separated string. We will check headers in order like `"X-Api-Key,Authorization"`.

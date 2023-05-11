@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import gzip
 from datetime import datetime, timedelta
 import queue
 import random
 import itertools
 import math
-import base64
 
 try:
     from cStringIO import StringIO
@@ -76,8 +74,8 @@ class MoesifMiddleware(object):
         self.config = self.app_config.get_config(self.api_client, self.DEBUG)
         self.sampling_percentage = 100
         self.last_updated_time = datetime.utcnow()
-        self.moesif_events_queue = queue.Queue()
-        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 25)
+        self.moesif_events_queue = queue.Queue(self.settings.get('EVENT_QUEUE_SIZE', 100000))
+        self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 100)
         self.last_event_job_run_time = datetime(1970, 1, 1, 0, 0)  # Assuming job never ran, set it to epoch start time
         self.scheduler = None
         self.is_event_job_scheduled = False

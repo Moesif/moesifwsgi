@@ -93,9 +93,9 @@ class Worker(threading.Thread):
                 print(str(ex))
 
 class BatchedWorkerPool:
-    def __init__(self, worker_count, event_queue, api_client, debug, batch_size, timeout):
-        self.event_queue = event_queue
-        self.batch_queue = queue.Queue()
+    def __init__(self, worker_count, api_client, debug, max_queue_size, batch_size, timeout):
+        self.event_queue = queue.Queue(maxsize=max_queue_size)
+        self.batch_queue = queue.Queue(maxsize=max_queue_size)
         self.batch_size = batch_size
         self.timeout = timeout
         self.worker_count = worker_count
@@ -112,6 +112,9 @@ class BatchedWorkerPool:
             worker = Worker(self.b, self.api_client, self.debug)
             worker.start()
             self.workers.append(worker)
+    
+    def add_event(self, event):
+        self.event_queue.put(event)
 
     def stop(self):
         # Stop batcher

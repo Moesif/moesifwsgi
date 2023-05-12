@@ -5,6 +5,8 @@ import random
 import itertools
 import math
 
+from moesifwsgi.workers import BatchedWorkerPool
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -70,11 +72,19 @@ class MoesifMiddleware(object):
         self.parse_body = ParseBody()
         self.event_mapper = EventMapper()
         self.send_async_events = SendEventAsync()
+        self.worker_pool = BatchedWorkerPool(
+            worker_count=settings.get('EVENT_WORKER_COUNT', 2),
+            api_client=self.api_client,
+            debug=self.DEBUG,
+            max_queue_size=settings.get('EVENT_QUEUE_SIZE', 1000),
+            batch_size=settings.get('BATCH_SIZE', 100),
+            timeout=settings.get('EVENT_BATCH_TIMEOUT', 2)
+        )
         self.config_etag = None
         self.config = self.app_config.get_config(self.api_client, self.DEBUG)
         self.sampling_percentage = 100
         self.last_updated_time = datetime.utcnow()
-        self.moesif_events_queue = queue.Queue(self.settings.get('EVENT_QUEUE_SIZE', 100000))
+        self.moesif_events_queue = queue.Queue(self.settings.get('EVENT_QUEUE_SIZE', 1000))
         self.BATCH_SIZE = self.settings.get('BATCH_SIZE', 100)
         self.last_event_job_run_time = datetime(1970, 1, 1, 0, 0)  # Assuming job never ran, set it to epoch start time
         self.scheduler = None

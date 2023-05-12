@@ -5,34 +5,37 @@ import time
 from moesifwsgi.logger_helper import LoggerHelper
 
 class Batcher(threading.Thread):
-    def __init__(self, input_queue, output_queue, batch_size, timeout):
+    def __init__(self, event_queue, batch_queue, batch_size, timeout):
         super().__init__()
-        self.input_queue = input_queue
-        self.output_queue = output_queue
+        self.event_queue = event_queue
+        self.batch_queue = batch_queue
+        # batch_size is used to control how many events are in a batch maximum
         self.batch_size = batch_size
+        # timeout is used to control how long the batcher will wait for the next event
         self.timeout = timeout
-        self._stop_event = threading.Event()  # Create a stop event
+        self._stop_event = threading.Event()
 
     def stop(self):
-        self._stop_event.set()  # Set the stop event
+        self._stop_event.set()
 
     def run(self):
-        while not self._stop_event.is_set():  # Check if the stop event is set
+        # Continue to consume the input queue until stop event is set
+        while not self._stop_event.is_set():
             try:
                 batch = self._create_batch(block=True)
                 if batch:
-                    self.output_queue.put(batch)
+                    self.batch_queue.put(batch)
             except Exception as e:
                 print(f"Exception occurred in Batcher thread: {e}")
                 continue
 
         # After stop event is set, continue to drain the input queue until it's empty
         self.timeout = 0
-        while not self.input_queue.empty():
+        while not self.event_queue.empty():
             try:
                 batch = self._create_batch(block=False)
                 if batch:
-                    self.output_queue.put(batch)
+                    self.batch_queue.put(batch)
             except Exception as e:
                 print(f"Exception occurred in Batcher thread: {e}")
                 continue
@@ -40,9 +43,9 @@ class Batcher(threading.Thread):
     def _create_batch(self, block):
         batch = []
         start_time = time.time()
-        while len(batch) < self.batch_size and not self.input_queue.empty():
+        while len(batch) < self.batch_size and not self.event_queue.empty():
             try:
-                item = self.input_queue.get(block=block, timeout=self.timeout)
+                item = self.event_queue.get(block=block, timeout=self.timeout)
                 batch.append(item)
             except queue.Empty:
                 break
@@ -84,15 +87,10 @@ class Worker(threading.Thread):
             batch_events_api_response = self.api_client.create_events_batch(batch_events)
             if self.debug:
                 print("Events sent successfully for pid - " + self.logger_helper.get_worker_pid())
-            # Fetch Config ETag from response header
-            batch_events_response_config_etag = batch_events_api_response.get("X-Moesif-Config-ETag")
-            # Return Config Etag
-            return batch_events_response_config_etag
         except Exception as ex:
             if self.debug:
                 print("Error sending event to Moesif for pid - " + self.logger_helper.get_worker_pid())
                 print(str(ex))
-            return None
 
 class BatchedWorkerPool:
     def __init__(self, worker_count, event_queue, api_client, debug, batch_size, timeout):

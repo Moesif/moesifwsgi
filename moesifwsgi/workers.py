@@ -5,6 +5,12 @@ import time
 from moesifwsgi.logger_helper import LoggerHelper
 
 class Batcher(threading.Thread):
+    """
+    A class used for batching events. This runs in a single background thread,
+    and consumes events from the input queue, executes batch size and maximum 
+    wait time constraints and puts batches of events into the batch queue for
+    the worker threads to consume.
+    """
     def __init__(self, event_queue, batch_queue, batch_size, timeout):
         super().__init__()
         self.event_queue = event_queue
@@ -55,6 +61,10 @@ class Batcher(threading.Thread):
 
 
 class Worker(threading.Thread):
+    """
+    A class used for sending events to Moesif asynchronously. This runs in a pool of
+    background threads, and consumes batches of events from the batch queue.
+    """
     def __init__(self, queue, api_client, debug):
         super().__init__()
         self.queue = queue
@@ -93,6 +103,11 @@ class Worker(threading.Thread):
                 print(str(ex))
 
 class BatchedWorkerPool:
+    """
+    A class used for managing a pool of workers and a batcher. This class is
+    responsible for starting and stopping the workers and the batcher, and
+    for adding events to the event queue.
+    """
     def __init__(self, worker_count, api_client, debug, max_queue_size, batch_size, timeout):
         self.event_queue = queue.Queue(maxsize=max_queue_size)
         self.batch_queue = queue.Queue(maxsize=max_queue_size)
@@ -109,7 +124,7 @@ class BatchedWorkerPool:
         # Start workers
         self.workers = []
         for _ in range(self.worker_count):
-            worker = Worker(self.b, self.api_client, self.debug)
+            worker = Worker(self.batch_queue, self.api_client, self.debug)
             worker.start()
             self.workers.append(worker)
     

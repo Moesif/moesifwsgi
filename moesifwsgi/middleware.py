@@ -65,6 +65,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher()
             self.api_client.http_call_back = response_catcher
         self.client_ip = ClientIp()
+        # AppConfig stores and fetches the config from the server
         self.app_config = AppConfig(self.update_config, self.api_client, self.DEBUG)
         self.parse_body = ParseBody()
         self.event_mapper = EventMapper()
@@ -80,21 +81,6 @@ class MoesifMiddleware(object):
         )
         # When shutting down, stop the worker pool and wait for it to finish
         atexit.register(self.worker_pool.stop)
-        self.config_etag = None
-        self.update_config(self.app_config.get_config(self.api_client, self.DEBUG))
-        self.sampling_percentage = 100
-        self.last_updated_time = datetime.utcnow()
-        
-    def update_config(self, config):
-        self.config = config
-        try:
-            if self.config:
-                self.config_etag, self.sampling_percentage, self.last_updated_time = self.app_config.parse_configuration(
-                    self.config, self.DEBUG)
-        except Exception as ex:
-            if self.DEBUG:
-                print('Error while parsing application configuration for pid - ' + self.logger_helper.get_worker_pid())
-                print(str(ex))
 
     # Function to get configuration uri
     def get_configuration_uri(self, settings, field, deprecated_field):
@@ -156,7 +142,7 @@ class MoesifMiddleware(object):
                 # Prepare event to be sent to Moesif
                 event_data = self.process_data(data_holder)
 
-                self.sampling_percentage = self.app_config.get_sampling_percentage(event_data, self.config,
+                event_sampling_percentage = self.app_config.get_sampling_percentage(event_data,
                                                                                    self.logger_helper.get_user_id(
                                                                                        environ, self.settings, self.app,
                                                                                        self.DEBUG, response_headers_mapping),
@@ -164,10 +150,10 @@ class MoesifMiddleware(object):
                                                                                        environ, self.settings, self.app,
                                                                                        self.DEBUG, response_headers_mapping))
 
-                if self.sampling_percentage >= random_percentage:
+                if event_sampling_percentage >= random_percentage:
                     if event_data:
                         # Add Weight to the event
-                        event_data.weight = 1 if self.sampling_percentage == 0 else math.floor(100 / self.sampling_percentage)
+                        event_data.weight = 1 if event_sampling_percentage == 0 else math.floor(100 / event_sampling_percentage)
                         try:
                             # Add Event to the queue
                             if self.DEBUG:
@@ -182,7 +168,7 @@ class MoesifMiddleware(object):
                             print('Skipped Event as the moesif event model is None for pid - ' + self.logger_helper.get_worker_pid())
                 else:
                     if self.DEBUG:
-                        print("Skipped Event due to sampling percentage: " + str(self.sampling_percentage)
+                        print("Skipped Event due to sampling percentage: " + str(event_sampling_percentage)
                               + " and random percentage: " + str(random_percentage) + " for pid - " + self.logger_helper.get_worker_pid())
             else:
                 if self.DEBUG:

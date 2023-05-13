@@ -65,10 +65,11 @@ class Worker(threading.Thread):
     A class used for sending events to Moesif asynchronously. This runs in a pool of
     background threads, and consumes batches of events from the batch queue.
     """
-    def __init__(self, queue, api_client, debug):
+    def __init__(self, queue, api_client, config, debug):
         super().__init__()
         self.queue = queue
         self.api_client = api_client
+        self.config = config
         self.debug = debug
         self.logger_helper = LoggerHelper()
         self._stop_event = threading.Event()  # Create a stop event
@@ -95,6 +96,8 @@ class Worker(threading.Thread):
             if self.debug:
                 print("Sending events to Moesif for pid - " + self.logger_helper.get_worker_pid())
             batch_events_api_response = self.api_client.create_events_batch(batch_events)
+            etag = batch_events_api_response.get("X-Moesif-Config-ETag")
+            self.config.check_and_update(etag)
             if self.debug:
                 print("Events sent successfully for pid - " + self.logger_helper.get_worker_pid())
         except Exception as ex:

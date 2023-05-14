@@ -11,7 +11,7 @@ class Batcher(threading.Thread):
     wait time constraints and puts batches of events into the batch queue for
     the worker threads to consume.
     """
-    def __init__(self, event_queue, batch_queue, batch_size, timeout):
+    def __init__(self, event_queue, batch_queue, batch_size, timeout, debug):
         super().__init__()
         self.event_queue = event_queue # input queue
         self.batch_queue = batch_queue # output queue
@@ -19,6 +19,7 @@ class Batcher(threading.Thread):
         self.batch_size = batch_size
         # timeout is used to control how long the batcher will wait for the next event
         self.timeout = timeout
+        self.debug = debug
         self._stop_event = threading.Event()
 
     def stop(self):
@@ -30,6 +31,8 @@ class Batcher(threading.Thread):
             try:
                 batch = self._create_batch(block=True)
                 if batch:
+                    if self.debug:
+                        print("Putting batch in queue for pid - " + LoggerHelper.get_worker_pid())
                     self.batch_queue.put(batch)
             except Exception as e:
                 print(f"Exception occurred in Batcher thread: {e}")
@@ -49,21 +52,21 @@ class Batcher(threading.Thread):
     def _create_batch(self, block):
         batch = []
         start_time = time.time()
+        max_wait = self.timeout
         # Continue to consume the input queue until the batch is full or the batcher has been waiting for too long
-        while len(batch) < self.batch_size and not self.event_queue.empty():
-            # Calculate the max wait time for the next event in the batch based on the timeout
-            max_wait = self.timeout - (time.time() - start_time)
+        while len(batch) < self.batch_size and max_wait > 0:
             try:
                 # If block is True, this will block until the next event is available which is the default behavior we want
                 # this is the primary wait loop which aggregates events into a batch and enforces the max wait time
                 # if block is False, this will return immediately when the input queue is empty, and this is used during shutdown
                 item = self.event_queue.get(block=block, timeout=max_wait)
                 batch.append(item)
+                if self.debug:
+                    print("Got event from queue " + item.request.uri + " for pid - " + LoggerHelper.get_worker_pid())
             except queue.Empty:
                 break
-            # If the batcher has been waiting for too long, return the batch
-            if time.time() - start_time >= self.timeout:
-                break
+            # Calculate the max wait time for the next event in the batch based on the timeout
+            max_wait = self.timeout - (time.time() - start_time)
         return batch
 
 
@@ -108,7 +111,7 @@ class Worker(threading.Thread):
             etag = batch_events_api_response.get("X-Moesif-Config-ETag")
             self.config.check_and_update(etag)
             if self.debug:
-                print("Events sent successfully for pid - " + self.logger_helper.get_worker_pid())
+                print("Events sent successfully for up pid - " + self.logger_helper.get_worker_pid())
         except Exception as ex:
             if self.debug:
                 print("Error sending event to Moesif for pid - " + self.logger_helper.get_worker_pid())
@@ -131,7 +134,7 @@ class BatchedWorkerPool:
         self.debug = debug
 
         # Start batcher
-        self.batcher = Batcher(self.event_queue, self.batch_queue, self.batch_size, self.timeout)
+        self.batcher = Batcher(self.event_queue, self.batch_queue, self.batch_size, self.timeout, self.debug)
         self.batcher.start()
 
         # Start workers
@@ -148,16 +151,11 @@ class BatchedWorkerPool:
         # Stop batcher
         if self.batcher:
             self.batcher.stop()
-            self.batcher.join()
-
         for worker in self.workers:
             worker.stop()
 
         # Wait for all tasks in the queue to be processed
-        self.output_queue.join()
 
-        for worker in self.workers:
-            worker.join()
 
         # Clear workers
         self.batcher = None

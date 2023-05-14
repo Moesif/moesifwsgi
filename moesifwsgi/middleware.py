@@ -43,11 +43,12 @@ class MoesifMiddleware(object):
         else:
             raise Exception('Moesif Application ID is required in settings')
 
-        if settings.get('DEBUG', False):
+        self.logger_helper = LoggerHelper()
+        self.DEBUG = settings.get('DEBUG', False)
+        if self.DEBUG:
+            print('Debug is enabled. Starting Moesif middleware for pid - ' + self.logger_helper.get_worker_pid())
             Configuration.BASE_URI = self.get_configuration_uri(settings, 'BASE_URI', 'LOCAL_MOESIF_BASEURL')
         Configuration.version = 'moesifwsgi-python/1.6.1'
-        self.DEBUG = settings.get('DEBUG', False)
-        self.logger_helper = LoggerHelper()
         if settings.get('CAPTURE_OUTGOING_REQUESTS', False):
             try:
                 if self.DEBUG:
@@ -90,6 +91,7 @@ class MoesifMiddleware(object):
             return settings.get(deprecated_field, 'https://api.moesif.net')
 
     def __call__(self, environ, start_response):
+        print("MoesifMiddleware.__call__")
         request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         if self.DEBUG:
             print("event request time: ", request_time)

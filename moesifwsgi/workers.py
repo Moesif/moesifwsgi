@@ -12,7 +12,7 @@ class Batcher(threading.Thread):
     the worker threads to consume.
     """
     def __init__(self, event_queue, batch_queue, batch_size, timeout, debug):
-        super().__init__()
+        super().__init__(daemon=True)
         self.event_queue = event_queue # input queue
         self.batch_queue = batch_queue # output queue
         # batch_size is used to control how many events are in a batch maximum
@@ -76,7 +76,7 @@ class Worker(threading.Thread):
     background threads, and consumes batches of events from the batch queue.
     """
     def __init__(self, queue, api_client, config, debug):
-        super().__init__()
+        super().__init__(daemon=True)
         self.queue = queue
         self.api_client = api_client
         self.config = config

@@ -1,2 +1,2 @@
-moesifwsgi==1.6.0
+moesifwsgi>=1.6.0
 Flask

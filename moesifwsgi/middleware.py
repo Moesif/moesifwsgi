@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, timedelta
-import queue
+from datetime import datetime
 import random
 import itertools
 import math
+from moesifwsgi.config_manager import ConfigUpdateManager
 
 from moesifwsgi.workers import BatchedWorkerPool
 
@@ -24,7 +24,6 @@ from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
 import atexit
-import logging
 
 
 class MoesifMiddleware(object):
@@ -66,7 +65,8 @@ class MoesifMiddleware(object):
             self.api_client.http_call_back = response_catcher
         self.client_ip = ClientIp()
         # AppConfig stores and fetches the config from the server
-        self.app_config = AppConfig(self.update_config, self.api_client, self.DEBUG)
+        self.app_config = AppConfig()
+        self.config = ConfigUpdateManager(self.api_client, self.app_config, self.DEBUG)
         self.parse_body = ParseBody()
         self.event_mapper = EventMapper()
         self.send_async_events = SendEventAsync()
@@ -74,6 +74,7 @@ class MoesifMiddleware(object):
         self.worker_pool = BatchedWorkerPool(
             worker_count=settings.get('EVENT_WORKER_COUNT', 2),
             api_client=self.api_client,
+            config=self.config,
             debug=self.DEBUG,
             max_queue_size=settings.get('EVENT_QUEUE_SIZE', 1000),
             batch_size=settings.get('BATCH_SIZE', 100),
@@ -142,7 +143,7 @@ class MoesifMiddleware(object):
                 # Prepare event to be sent to Moesif
                 event_data = self.process_data(data_holder)
 
-                event_sampling_percentage = self.app_config.get_sampling_percentage(event_data,
+                event_sampling_percentage = self.config.get_sampling_percentage(event_data,
                                                                                    self.logger_helper.get_user_id(
                                                                                        environ, self.settings, self.app,
                                                                                        self.DEBUG, response_headers_mapping),

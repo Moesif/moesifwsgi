@@ -19,7 +19,6 @@ from .parse_body import ParseBody
 from .logger_helper import LoggerHelper
 from .moesif_data_holder import DataHolder
 from .event_mapper import EventMapper
-from .send_batch_events import SendEventAsync
 from .client_ip import ClientIp
 from .http_response_catcher import HttpResponseCatcher
 from moesifpythonrequest.start_capture.start_capture import StartCapture
@@ -69,7 +68,6 @@ class MoesifMiddleware(object):
         self.config = ConfigUpdateManager(self.api_client, self.app_config, self.DEBUG)
         self.parse_body = ParseBody()
         self.event_mapper = EventMapper()
-        self.send_async_events = SendEventAsync()
         # Create queues and threads which will batch and send events in the background
         self.worker_pool = BatchedWorkerPool(
             worker_count=settings.get('EVENT_WORKER_COUNT', 2),

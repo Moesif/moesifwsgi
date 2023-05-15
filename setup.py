@@ -64,12 +64,17 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
 
     keywords='log analysis restful api development debug wsgi flask bottle http middleware',
@@ -82,7 +87,13 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['requests', 'isodatetimehandler', 'moesifapi>=1.4.0', 'moesifpythonrequest>=0.3.0', 'readerwriterlock==1.0.9'],
+    install_requires=[
+        'requests>=2.0.0', 
+        'isodatetimehandler>=1.0.0', 
+        'moesifapi>=1.4.0', 
+        'moesifpythonrequest>=0.3.0', 
+        'readerwriterlock>=1.0.9'
+    ],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,

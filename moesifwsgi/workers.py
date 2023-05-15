@@ -3,6 +3,9 @@ import threading
 import time
 
 from moesifwsgi.logger_helper import LoggerHelper
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Batcher(threading.Thread):
     """
@@ -13,6 +16,7 @@ class Batcher(threading.Thread):
     """
     def __init__(self, event_queue, batch_queue, batch_size, timeout, debug):
         super().__init__(daemon=True)
+        logger.debug("Initializing Batcher")
         self.event_queue = event_queue # input queue
         self.batch_queue = batch_queue # output queue
         # batch_size is used to control how many events are in a batch maximum
@@ -31,11 +35,10 @@ class Batcher(threading.Thread):
             try:
                 batch = self._create_batch(block=True)
                 if batch:
-                    if self.debug:
-                        print("Putting batch in queue for pid - " + LoggerHelper.get_worker_pid())
+                    logger.debug("Putting batch in queue")
                     self.batch_queue.put(batch)
             except Exception as e:
-                print(f"Exception occurred in Batcher thread: {e}")
+                logger.exception(f"Exception occurred in Batcher thread", e)
                 continue
 
         # After stop event is set, continue to drain the input queue until it's empty
@@ -46,7 +49,7 @@ class Batcher(threading.Thread):
                 if batch:
                     self.batch_queue.put(batch)
             except Exception as e:
-                print(f"Exception occurred in Batcher thread: {e}")
+                logger.exception(f"Exception occurred in Batcher thread", e)
                 continue
 
     def _create_batch(self, block):
@@ -61,10 +64,9 @@ class Batcher(threading.Thread):
                 # if block is False, this will return immediately when the input queue is empty, and this is used during shutdown
                 item = self.event_queue.get(block=block, timeout=max_wait)
                 batch.append(item)
-                if self.debug:
-                    print("Got event from queue " + item.request.uri + " for pid - " + LoggerHelper.get_worker_pid())
+                logger.debug("Got event from queue " + item.request.uri)
             except queue.Empty:
-                break
+                pass
             # Calculate the max wait time for the next event in the batch based on the timeout
             max_wait = self.timeout - (time.time() - start_time)
         return batch
@@ -77,6 +79,7 @@ class Worker(threading.Thread):
     """
     def __init__(self, queue, api_client, config, debug):
         super().__init__(daemon=True)
+        logger.debug("Initializing Worker")
         self.queue = queue
         self.api_client = api_client
         self.config = config
@@ -99,23 +102,20 @@ class Worker(threading.Thread):
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"Exception occurred in Worker thread: {e}")
+                logger.exception(f"Exception occurred in Worker thread", e)
                 continue
 
     def send_events(self, batch_events):
         try:
-            if self.debug:
-                print("Sending events to Moesif for pid - " + self.logger_helper.get_worker_pid())
+            logger.debug("Sending events to Moesif")
             batch_events_api_response = self.api_client.create_events_batch(batch_events)
             # Update the configuration if necessary
             etag = batch_events_api_response.get("X-Moesif-Config-ETag")
             self.config.check_and_update(etag)
             if self.debug:
-                print("Events sent successfully for up pid - " + self.logger_helper.get_worker_pid())
+                logger.debug("Events sent successfully to Moesif")
         except Exception as ex:
-            if self.debug:
-                print("Error sending event to Moesif for pid - " + self.logger_helper.get_worker_pid())
-                print(str(ex))
+            logger.exception("Error sending event to Moesif", ex)
 
 class BatchedWorkerPool:
     """
@@ -124,6 +124,7 @@ class BatchedWorkerPool:
     for adding events to the event queue.
     """
     def __init__(self, worker_count, api_client, config, debug, max_queue_size, batch_size, timeout):
+        logger.debug("Initializing BatchedWorkerPool")
         self.event_queue = queue.Queue(maxsize=max_queue_size)
         self.batch_queue = queue.Queue(maxsize=max_queue_size)
         self.batch_size = batch_size
@@ -145,18 +146,26 @@ class BatchedWorkerPool:
             self.workers.append(worker)
     
     def add_event(self, event):
-        self.event_queue.put(event)
+        # Add event to the event queue if it's not full
+        # do not block and return immediately, True if successful, False if not
+        try:
+            self.event_queue.put(event, block=False)
+            return True
+        except queue.Full:
+            return False
 
     def stop(self):
-        # Stop batcher
+        logging.debug("Stopping BatchedWorkerPool")
         if self.batcher:
             self.batcher.stop()
+            self.batcher.join()
+        
         for worker in self.workers:
             worker.stop()
 
         # Wait for all tasks in the queue to be processed
+        self.batch_queue.join()
 
+        for worker in self.workers:
+            worker.join()
 
-        # Clear workers
-        self.batcher = None
-        self.workers = []

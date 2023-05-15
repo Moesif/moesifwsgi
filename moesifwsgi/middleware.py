@@ -99,7 +99,7 @@ class MoesifMiddleware(object):
             api_client=self.api_client,
             config=self.config,
             debug=self.DEBUG,
-            max_queue_size=self.settings.get("EVENT_QUEUE_SIZE", 1000),
+            max_queue_size=self.settings.get("EVENT_QUEUE_SIZE", 10000),
             batch_size=self.settings.get("BATCH_SIZE", 100),
             timeout=self.settings.get("EVENT_BATCH_TIMEOUT", 2),
         )

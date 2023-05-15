@@ -140,10 +140,10 @@ to associate this event with custom metadata. For example, you may want to save 
 (optional) _boolean_, default True, Set to False to remove logging request and response body.
 
 #### __`EVENT_QUEUE_SIZE`__
-(optional) __int__, default 1000, the maximum number of event objects queued in memory pending upload to Moesif.  If the queue is full additional calls to `MoesifMiddleware` will return immediately without logging the event, so this number should be set based on the expected event size and memory capacity
+(optional) __int__, default 10000, the maximum number of event objects queued in memory pending upload to Moesif.  If the queue is full additional calls to `MoesifMiddleware` will return immediately without logging the event, so this number should be set based on the expected event size and memory capacity
 
 ### __`EVENT_WORKER_COUNT`__
-(optional) __int__, default 1, the number of worker threads to use for uploading events to Moesif.  If you have a large number of events being logged, increasing this number can improve upload performance.
+(optional) __int__, default 2, the number of worker threads to use for uploading events to Moesif.  If you have a large number of events being logged, increasing this number can improve upload performance.
 
 #### __`BATCH_SIZE`__
 (optional) __int__, default 100, Maximum batch size when sending events to Moesif when reading from the queue

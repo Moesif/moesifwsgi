@@ -1,3 +1,4 @@
+import math
 import queue
 import threading
 import time
@@ -126,7 +127,7 @@ class BatchedWorkerPool:
     def __init__(self, worker_count, api_client, config, debug, max_queue_size, batch_size, timeout):
         logger.debug("Initializing BatchedWorkerPool")
         self.event_queue = queue.Queue(maxsize=max_queue_size)
-        self.batch_queue = queue.Queue(maxsize=max_queue_size)
+        self.batch_queue = queue.Queue(maxsize=math.ceil(max_queue_size / batch_size))
         self.batch_size = batch_size
         self.timeout = timeout
         self.worker_count = worker_count
@@ -169,3 +170,6 @@ class BatchedWorkerPool:
         for worker in self.workers:
             worker.join()
 
+        # Clear workers
+        self.batcher = None
+        self.workers = []

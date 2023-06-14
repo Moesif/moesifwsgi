@@ -169,6 +169,8 @@ class MoesifMiddleware(object):
             self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping),
             self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG, response_headers_mapping)
         )
+        logger.debug("sampling_percentage: " + str(event_sampling_percentage))
+
 
         # if the event has a sample rate of less than 100, then we need to check if this event should be skipped and not sent to Moesif
         random_percentage = random.random() * 100

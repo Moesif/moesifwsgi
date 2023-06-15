@@ -2,6 +2,10 @@ import concurrent.futures
 from readerwriterlock import rwlock
 from datetime import datetime, timedelta
 from moesifapi.exceptions.api_exception import *
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigUpdateManager:
@@ -9,6 +13,7 @@ class ConfigUpdateManager:
     It is also responsible for caching the configuration and returning the sampling percentage.
     """
     def __init__(self, api_client, app_config, debug):
+        self.MAX_ETAG_REFRESH_TIME_IN_MIN = 5 # in minutes
         self.api_client = api_client
         self.app_config = app_config
         self.debug = debug
@@ -21,6 +26,16 @@ class ConfigUpdateManager:
         self.current_etag = None
         self.config = None
         self.last_updated_time = datetime.utcnow()
+        self.__init_config__()
+
+    def __init_config__(self):
+        try:
+            # load the config at the start
+            with self._lock.gen_wlock():
+                self._executor.submit(self.update_configuration, None)
+        except Exception as e:
+            logger.exception(f"Error while fetching configuration on start", e)
+            pass
 
     def check_and_update(self, response_etag):
         """ Check if the configuration needs to be updated. If so, update it in a separate thread.
@@ -33,7 +48,7 @@ class ConfigUpdateManager:
         with self._lock.gen_rlock():
             if self.current_etag:
                 if self.current_etag == response_etag:
-                    if datetime.utcnow() >= self.last_updated_time + timedelta(minutes=5):
+                    if datetime.utcnow() >= self.last_updated_time + timedelta(minutes=self.MAX_ETAG_REFRESH_TIME_IN_MIN):
                         self.last_updated_time = datetime.utcnow()
                     return
         # Acquire a write lock, save the new etag and queue the update in a separate thread.
@@ -62,6 +77,7 @@ class ConfigUpdateManager:
             if config is not None:
                 self.config = config
                 self.last_updated_time = new_last_updated_time
+                logger.debug("config update at " + str(self.last_updated_time))
 
     def get_sampling_percentage(self, event_data, user_id, company_id):
         """Get sampling percentage.

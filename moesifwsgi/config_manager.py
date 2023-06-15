@@ -25,7 +25,7 @@ class ConfigUpdateManager:
         self._lock = rwlock.RWLockFairD()
         self.current_etag = None
         self.config = None
-        self.last_updated_time = datetime.utcnow()
+        self.last_updated_time = datetime.utcnow() - timedelta(minutes=self.MAX_ETAG_REFRESH_TIME_IN_MIN)
         self.__init_config__()
 
     def __init_config__(self):
@@ -54,7 +54,7 @@ class ConfigUpdateManager:
         # Acquire a write lock, save the new etag and queue the update in a separate thread.
         with self._lock.gen_wlock():
             if self.current_etag != response_etag:
-                # saving the etag now will prevent us from updating the configuration again while the update is in progress.
+                # saving etag now will prevent us from updating the configuration again while the update is in progress.
                 self.current_etag = response_etag
                 # Offload the actual update to another thread
                 self._executor.submit(self.update_configuration, response_etag)
@@ -70,14 +70,15 @@ class ConfigUpdateManager:
         # Acquire a lock and update the configuration only if the etag has changed since the last time we updated it.
         with self._lock.gen_wlock():
             # We need to check the etag again because it might have changed while we were waiting for the lock.
-            # If there was an unrecoverable failure in this update call, new_etag will be None, 
-            # and saving this value without updating the configuration will cause us to retry the update on the next request.
+            # If there was an unrecoverable failure in this update call, new_etag will be None, and saving
+            # this value without updating the configuration will cause us to retry the update on the next request.
             # if new_etag != self.current_etag:
             self.current_etag = new_etag
             if config is not None:
                 self.config = config
                 self.last_updated_time = new_last_updated_time
-                logger.debug("config update at " + str(self.last_updated_time))
+                if self.debug:
+                    logger.debug("config update at " + str(self.last_updated_time))
 
     def get_sampling_percentage(self, event_data, user_id, company_id):
         """Get sampling percentage.

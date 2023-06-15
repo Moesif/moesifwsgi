@@ -1,4 +1,4 @@
-moesifwsgi==1.6.0
+moesifwsgi==1.8.0
 falcon==3.1.0
 gunicorn
 falcon-multipart

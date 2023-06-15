@@ -2,6 +2,10 @@ import concurrent.futures
 from readerwriterlock import rwlock
 from datetime import datetime, timedelta
 from moesifapi.exceptions.api_exception import *
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigUpdateManager:
@@ -9,6 +13,7 @@ class ConfigUpdateManager:
     It is also responsible for caching the configuration and returning the sampling percentage.
     """
     def __init__(self, api_client, app_config, debug):
+        self.MAX_ETAG_REFRESH_TIME_IN_MIN = 5 # in minutes
         self.api_client = api_client
         self.app_config = app_config
         self.debug = debug
@@ -20,7 +25,17 @@ class ConfigUpdateManager:
         self._lock = rwlock.RWLockFairD()
         self.current_etag = None
         self.config = None
-        self.last_updated_time = datetime.utcnow()
+        self.last_updated_time = datetime.utcnow() - timedelta(minutes=self.MAX_ETAG_REFRESH_TIME_IN_MIN)
+        self.__init_config__()
+
+    def __init_config__(self):
+        try:
+            # load the config at the start
+            with self._lock.gen_wlock():
+                self._executor.submit(self.update_configuration, None)
+        except Exception as e:
+            logger.exception(f"Error while fetching configuration on start", e)
+            pass
 
     def check_and_update(self, response_etag):
         """ Check if the configuration needs to be updated. If so, update it in a separate thread.
@@ -31,12 +46,15 @@ class ConfigUpdateManager:
         # Acquire a read lock and check if the configuration needs to be updated.
         # but ony if the last update was more than 5 minutes ago.
         with self._lock.gen_rlock():
-            if self.current_etag == response_etag or datetime.utcnow() < self.last_updated_time + timedelta(minutes=5):
-                return
+            if self.current_etag:
+                if self.current_etag == response_etag:
+                    if datetime.utcnow() >= self.last_updated_time + timedelta(minutes=self.MAX_ETAG_REFRESH_TIME_IN_MIN):
+                        self.last_updated_time = datetime.utcnow()
+                    return
         # Acquire a write lock, save the new etag and queue the update in a separate thread.
         with self._lock.gen_wlock():
             if self.current_etag != response_etag:
-                # saving the etag now will prevent us from updating the configuration again while the update is in progress.
+                # saving etag now will prevent us from updating the configuration again while the update is in progress.
                 self.current_etag = response_etag
                 # Offload the actual update to another thread
                 self._executor.submit(self.update_configuration, response_etag)
@@ -52,13 +70,15 @@ class ConfigUpdateManager:
         # Acquire a lock and update the configuration only if the etag has changed since the last time we updated it.
         with self._lock.gen_wlock():
             # We need to check the etag again because it might have changed while we were waiting for the lock.
-            # If there was an unrecoverable failure in this update call, new_etag will be None, 
-            # and saving this value without updating the configuration will cause us to retry the update on the next request.
-            if new_etag != self.current_etag:
-                self.current_etag = new_etag
-                if config is not None:
-                    self.config = config
-                    self.last_updated_time = new_last_updated_time
+            # If there was an unrecoverable failure in this update call, new_etag will be None, and saving
+            # this value without updating the configuration will cause us to retry the update on the next request.
+            # if new_etag != self.current_etag:
+            self.current_etag = new_etag
+            if config is not None:
+                self.config = config
+                self.last_updated_time = new_last_updated_time
+                if self.debug:
+                    logger.debug("config update at " + str(self.last_updated_time))
 
     def get_sampling_percentage(self, event_data, user_id, company_id):
         """Get sampling percentage.

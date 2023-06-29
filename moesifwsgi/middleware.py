@@ -123,6 +123,10 @@ class MoesifMiddleware(object):
             return start_response(status, response_headers, *args)
         response_chunks = event_info.finish_response(self.app(environ, _start_response))
 
+        # Add response chunks and response headers to the environ
+        environ["moesif.response_body_chunks"] = response_chunks
+        environ["moesif.response_headers"] = response_headers_mapping
+
         try:
             logger.debug(f"event response time: {event_info.response_time}")
         except Exception as e:

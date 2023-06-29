@@ -107,13 +107,20 @@ Please read the documentation for your specific framework on how to add middlewa
 
 ## Configuration options
 
+The app is the original WSGI app instance, and the environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
+Also, Moesif adds the following to the environ variable
+```
+environ['moesif.request_body'] - A json object or base64 encoded string if couldn't parse the request body as json 
+environ["moesif.response_body_chunks"] - A response body chunks
+environ["moesif.response_headers"] - A dict representing the response headers
+```
+
 #### __`APPLICATION_ID`__
 (__required__), _string_, is obtained via your Moesif Account, this is required.
 
 #### __`SKIP`__
 (optional) _(app, environ) => boolean_, a function that takes a WSGI app and an environ,
-and returns true if you want to skip this particular event. The app is the original WSGI app instance, and the
-environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
+and returns true if you want to skip this particular event.
 
 #### __`IDENTIFY_USER`__
 (optional, but highly recommended) _(app, environ, response_headers) => string_, a function that takes an app, an environ and an optional parameter response headers, and returns a string that is the user id used by your system. While Moesif tries to identify users automatically,

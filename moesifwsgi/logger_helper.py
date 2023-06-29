@@ -62,9 +62,11 @@ class LoggerHelper:
             if isinstance(body, str):
                 environ['wsgi.input'] = StringIO(body) # reset request body for the nested app Python2
                 encoded_body, transfer_encoding = self.parse_body.parse_string_body(body, content_encoding, None)
+                environ['moesif.request_body'] = encoded_body
             else:
                 environ['wsgi.input'] = BytesIO(body) # reset request body for the nested app Python3
                 encoded_body, transfer_encoding = self.parse_body.parse_bytes_body(body, content_encoding, None)
+                environ['moesif.request_body'] = encoded_body
         else:
             content_length = 0
         return content_length, encoded_body, transfer_encoding

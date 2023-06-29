@@ -108,7 +108,7 @@ Please read the documentation for your specific framework on how to add middlewa
 ## Configuration options
 
 The app is the original WSGI app instance, and the environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
-Also, Moesif adding the following to the environ variable
+Also, Moesif adds the following to the environ variable
 ```
 environ['moesif.request_body'] - A json object or base64 encoded string if couldn't parse the request body as json 
 environ["moesif.response_body_chunks"] - A response body chunks

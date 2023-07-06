@@ -19,7 +19,7 @@ import logging
 from moesifapi.moesif_api_client import *
 from moesifpythonrequest.app_config.app_config import AppConfig
 from moesifpythonrequest.start_capture.start_capture import StartCapture
-
+from moesifapi.api_helper import *
 from .client_ip import ClientIp
 from .event_mapper import EventMapper
 from .http_response_catcher import HttpResponseCatcher
@@ -186,9 +186,13 @@ class MoesifMiddleware(object):
             # Add Event to the queue if able and count the dropped event if at capacity
             if self.worker_pool.add_event(event_data):
                 logger.debug("Add Event to the queue")
+                if self.DEBUG:
+                    logger.debug("Event added to the queue - " + APIHelper.json_serialize(event_data))
             else:
                 self.dropped_events += 1
                 logger.info("Dropped Event due to queue capacity drop_count=" + str(self.dropped_events))
+                if self.DEBUG:
+                    logger.debug("Event dropped - " + APIHelper.json_serialize(event_data))
         # add_event does not throw exceptions so this is unexepected
         except Exception as ex:
             logger.exception("Error while adding event to the queue for", ex)

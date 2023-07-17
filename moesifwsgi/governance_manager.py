@@ -2,6 +2,10 @@ import json
 import re
 from moesifapi import APIException
 from functools import reduce
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def get_field_value_for_path(path, request_fields = {}, request_body = {}):
   if path and path.startswith('request.body.'):
@@ -91,13 +95,17 @@ def apply_one_rule(response_holder, rule, config_rule_values):
 
 
 def apply_rules(applicable_rules, response_holder, config_rules_values):
-  if not applicable_rules:
+  try:
+    if not applicable_rules:
+      return response_holder
+
+    for rule in applicable_rules:
+      response_holder = apply_one_rule(response_holder, rule, config_rules_values)
+
     return response_holder
-
-  for rule in applicable_rules:
-    response_holder = apply_one_rule(response_holder, rule, config_rules_values)
-
-  return response_holder
+  except Exception as ex:
+    logger.debug('failed to apply rules ' + str(ex))
+    return response_holder
 
 
 class GovernanceRulesManager:

@@ -247,6 +247,30 @@ class GovernanceRulesManager:
       'body': None
     }
 
+    applicable_regex_rules = self.get_applicable_regex_rules(request_fields, request_body)
+
+    response_holder = apply_rules(applicable_regex_rules, response_holder)
+
+    if company_id is None:
+      unidentified_company_rules = self.get_applicable_unidentified_company_rules(request_fields, request_body)
+      response_holder = apply_rules(unidentified_company_rules, response_holder)
+    else:
+      config_rules_values = config.get('company_rules', {}).get(company_id)
+      company_rules = self.get_company_rules(config_rules_values, request_fields, request_body)
+      response_holder = apply_rules(company_rules, response_holder, config_rules_values)
+
+    if user_id is None:
+      unidentified_user_rules = self.get_applicable_unidentified_user_rules(request_fields, request_body)
+      response_holder = apply_rules(unidentified_user_rules, response_holder)
+    else:
+      config_rules_values = config.get('user_rules', {}).get(user_id)
+      user_rules = self.get_user_rules(config_rules_values, request_fields, request_body)
+      response_holder = apply_rules(user_rules, response_holder, config_rules_values)
+
+    return response_holder
+
+
+
 
 
 

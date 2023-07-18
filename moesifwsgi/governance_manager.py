@@ -36,7 +36,6 @@ def does_regex_config_match(regex_config, request_fields, request_body):
   return reduce(lambda x, y: x or y, values_to_or, False)
 
 def recursively_replace_values(temp_val, merge_tag_values={}, rule_variables=None):
-  # FIXME: todo later.
   if not rule_variables:
     return temp_val
 
@@ -58,11 +57,10 @@ def recursively_replace_values(temp_val, merge_tag_values={}, rule_variables=Non
     return result
 
   if type(temp_val) is list:
-    return map(lambda x:  recursively_replace_values(x, merge_tag_values, rule_variables), temp_val)
+    return map(lambda x: recursively_replace_values(x, merge_tag_values, rule_variables), temp_val)
 
   # for all other types just return value
   return temp_val
-
 
 
 def modify_response_for_one_rule(response_holder, rule, merge_tag_values):
@@ -91,7 +89,6 @@ def apply_one_rule(response_holder, rule, config_rule_values):
         merge_tag_values = one_entry['values']
 
   return modify_response_for_one_rule(response_holder, rule, merge_tag_values)
-
 
 
 def apply_rules(applicable_rules, response_holder, config_rules_values):

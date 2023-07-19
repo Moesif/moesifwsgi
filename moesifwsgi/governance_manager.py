@@ -104,6 +104,15 @@ def apply_rules(applicable_rules, response_holder, config_rules_values):
     logger.debug('failed to apply rules ' + str(ex))
     return response_holder
 
+def format_body_for_middleware(body):
+  return [json.dumps(body)]
+
+def prepare_request_fields(event_info):
+  return {}
+
+def prepare_request_body(event_info):
+  return {}
+
 
 class GovernanceRulesManager:
   def __init__(self, api_client):
@@ -114,7 +123,7 @@ class GovernanceRulesManager:
     self.unidentified_user_rules = []
     self.unidentified_company_rules = []
 
-  def get_governance_rules_from_client(self, DEBUG):
+  def load_rules(self, DEBUG):
     try:
       get_rules_response = self.api_client.get_governance_rules()
       rules = json.loads(get_rules_response.raw_body)
@@ -132,6 +141,7 @@ class GovernanceRulesManager:
       return None
 
   def cache_rules(self, rules):
+    self.rules = rules
     self.user_rules = {}
     self.company_rules = {}
     self.regex_rules = []
@@ -148,6 +158,9 @@ class GovernanceRulesManager:
         self.company_rules[rule['_id']] = rule
         if rule['applied_to_unidentified']:
           self.unidentified_company_rules.append(rule)
+
+  def has_rules(self):
+    return self.rules and len(self.rules) > 0
 
   def get_applicable_regex_rules(self, request_fields, request_body):
     if self.regex_rules:
@@ -242,9 +255,9 @@ class GovernanceRulesManager:
     return applicable_rules
 
 
-  def govern_request(self, config, request, user_id, company_id):
-    request_fields = {}
-    request_body = {}
+  def govern_request(self, config, event_info, user_id, company_id):
+    request_fields = prepare_request_fields(event_info)
+    request_body = prepare_request_body(event_info)
 
     response_holder = {
       'status': None,
@@ -271,6 +284,9 @@ class GovernanceRulesManager:
       config_rules_values = config.get('user_rules', {}).get(user_id)
       user_rules = self.get_user_rules(config_rules_values, request_fields, request_body)
       response_holder = apply_rules(user_rules, response_holder, config_rules_values)
+
+    if response_holder['blocked_by']:
+      response_holder['body'] = format_body_for_middleware(response_holder['body'])
 
     return response_holder
 

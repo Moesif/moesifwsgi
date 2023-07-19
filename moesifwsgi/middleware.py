@@ -32,6 +32,15 @@ from .update_users import User
 logger = logging.getLogger(__name__)
 
 
+PY3 = sys.version_info > (3,)
+if PY3:
+    basestring = (bytes, str)
+    unicode = str
+
+def ensure_bytestring(s):
+    return s.encode('utf-8') if isinstance(s, unicode) else s
+
+
 class MoesifMiddleware(object):
     """WSGI Middleware for recording of request-response"""
 
@@ -109,19 +118,46 @@ class MoesifMiddleware(object):
         logger.debug(f"event request time: {request_time}")
 
         event_info = self.prepare_event_info(environ, start_response, request_time)
-
         response_headers_mapping = {}
+
+        governed_response = {}
+        if self.config.have_governance_rules():
+            # we must fire these hooks early.
+            request_user_id = self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG)
+            request_company_id = self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG)
+            governed_response = self.config.govern_request(event_info, request_user_id, request_company_id)
+
+        # monkey patch the default start_response to capture data and add headers
         def _start_response(status, response_headers, *args):
             # Capture status and response_headers for later processing
             event_info.capture_response_status(status, response_headers, self.DEBUG)
+
             if response_headers:
-                try:
-                    for pair in response_headers:
-                        response_headers_mapping[pair[0]] = pair[1]
-                except Exception as e:
-                    logger.exception("Error while parsing response headers", e)
-            return start_response(status, response_headers, *args)
-        response_chunks = event_info.finish_response(self.app(environ, _start_response))
+                final_headers = response_headers
+            else:
+                final_headers = []
+
+            # always insert in the headers from governance rules regardless of blocking or not.
+            if governed_response['headers']:
+                governance_headers_as_tuple_list = [(k, v) for k, v in governed_response['headers']]
+                final_headers = final_headers + governance_headers_as_tuple_list
+
+            try:
+                for pair in final_headers:
+                    response_headers_mapping[pair[0]] = pair[1]
+            except Exception as e:
+                logger.exception("Error while parsing response headers", e)
+            return start_response(status, final_headers, *args)
+
+
+        if governed_response['blocked_by']:
+          # start response immediately, skip next step
+          headers_as_tuple_list = [(k, v) for k, v in governed_response['headers']]
+          _start_response(governed_response['status'], headers_as_tuple_list)
+          response_chunks = event_info.finish_response(governed_response['body'])
+        else:
+          # trigger next step in the process
+          response_chunks = event_info.finish_response(self.app(environ, _start_response))
 
         # Add response chunks and response headers to the environ
         environ["moesif.response_body_chunks"] = response_chunks
@@ -165,7 +201,7 @@ class MoesifMiddleware(object):
         if self.logger_helper.should_skip(environ, self.settings, self.app, self.DEBUG):
             logger.debug("Skipped Event using should_skip configuration option")
             return
-                
+
         # Prepare event to be sent to Moesif and check the config for applicable sampling rules
         event_data = self.process_data(event_info)
         event_sampling_percentage = self.config.get_sampling_percentage(

@@ -126,7 +126,7 @@ class MoesifMiddleware(object):
             # we must fire these hooks early.
             request_user_id = self.logger_helper.get_user_id(environ, self.settings, self.app, self.DEBUG)
             request_company_id = self.logger_helper.get_company_id(environ, self.settings, self.app, self.DEBUG)
-            governed_response = self.config.govern_request(event_info, request_user_id, request_company_id)
+            governed_response = self.config.govern_request(event_info, request_user_id, request_company_id, event_info.request_body)
 
         # monkey patch the default start_response to capture data and add headers
         def _start_response(status, response_headers, *args):

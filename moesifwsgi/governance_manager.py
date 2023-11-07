@@ -117,21 +117,10 @@ def prepare_request_fields(event_info, request_body):
     'request.verb': event_info.method,
     'request.ip': event_info.ip_address,
     'request.route': event_info.url,
-    'request.body.operationName': request_body.get('operationName', None) if request_body else None
+    'request.body.operationName': request_body.get('operationName', None) if request_body and isinstance(request_body, dict) else None
   }
 
   return fields
-
-# TODO: Need to parse base64 encode
-def prepare_request_body(event_info):
-  if event_info.request_body:
-    if isinstance(event_info.request_body, dict):
-      return event_info.request_body
-    if isinstance(event_info.request_body, str):
-      # return safe_json_parse(event_info['body'])
-      print("Need to parse")
-      return None
-  return None
 
 
 class GovernanceRulesManager:
@@ -277,18 +266,8 @@ class GovernanceRulesManager:
 
     return applicable_rules
 
+  def govern_request(self, config, event_info, user_id, company_id, request_body):
 
-  # test with gzip body
-  # test with base64 body
-  # test with merge tags
-  # test with company cohort
-  # test with regex_config
-  # Add try/catch
-  # Test with python 2
-
-  def govern_request(self, config, event_info, user_id, company_id):
-
-    request_body = prepare_request_body(event_info)
     request_fields = prepare_request_fields(event_info, request_body)
 
     config_json = json.loads(config.raw_body)

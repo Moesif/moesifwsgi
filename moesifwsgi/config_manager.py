@@ -96,5 +96,5 @@ class ConfigUpdateManager:
         with self._lock.gen_rlock():
             return self.govern_manager.has_rules()
 
-    def govern_request(self, requestData, userId, companyId):
-        return self.govern_manager.govern_request(self.config, requestData, userId, companyId)
+    def govern_request(self, requestData, userId, companyId, request_body):
+        return self.govern_manager.govern_request(self.config, requestData, userId, companyId, request_body)

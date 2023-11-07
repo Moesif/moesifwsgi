@@ -140,8 +140,8 @@ class MoesifMiddleware(object):
 
             # always insert in the headers from governance rules regardless of blocking or not.
             if 'headers' in governed_response:
-                governance_headers_as_tuple_list = [(k, v) for k, v in governed_response['headers']]
-                final_headers = final_headers + governance_headers_as_tuple_list
+                governance_headers_as_tuple_list = [(k, v) for k, v in governed_response['headers'].items()]
+                final_headers = list(set(final_headers + governance_headers_as_tuple_list))
 
             try:
                 for pair in final_headers:
@@ -153,7 +153,7 @@ class MoesifMiddleware(object):
         blocked_by = None
         if 'blocked_by' in governed_response:
           # start response immediately, skip next step
-          headers_as_tuple_list = [(k, v) for k, v in governed_response['headers']]
+          headers_as_tuple_list = [(k, v) for k, v in governed_response['headers'].items()]
           _start_response(self.wsgi_statuses[governed_response['status']], headers_as_tuple_list)
           response_chunks = event_info.finish_response(governed_response['body'])
           blocked_by = governed_response['blocked_by']

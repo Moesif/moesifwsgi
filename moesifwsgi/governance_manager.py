@@ -70,7 +70,7 @@ def modify_response_for_one_rule(response_holder, rule, merge_tag_values):
     rule_variables = rule['variables']
 
   rule_headers = {}
-  if 'response' in rule and 'headers' in rule['response']['headers']:
+  if 'response' in rule and 'headers' in rule['response']:
     rule_headers = rule['response']['headers']
     if rule_headers:
       value_replaced_headers = recursively_replace_values(rule_headers, merge_tag_values, rule_variables)
@@ -91,7 +91,7 @@ def apply_one_rule(response_holder, rule, config_rule_values):
   if config_rule_values:
     for one_entry in config_rule_values:
       if one_entry['rules'] == rule['_id']:
-        if 'value' in one_entry:
+        if 'values' in one_entry:
           merge_tag_values = one_entry['values']
 
   return modify_response_for_one_rule(response_holder, rule, merge_tag_values)
@@ -285,6 +285,7 @@ class GovernanceRulesManager:
   # test with company cohort
   # test with regex_config
   # Add try/catch
+  # Test with python 2
 
   def govern_request(self, config, event_info, user_id, company_id):
 

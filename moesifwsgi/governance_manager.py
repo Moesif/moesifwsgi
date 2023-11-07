@@ -69,7 +69,6 @@ def modify_response_for_one_rule(response_holder, rule, merge_tag_values):
   if 'variables' in rule:
     rule_variables = rule['variables']
 
-  rule_headers = {}
   if 'response' in rule and 'headers' in rule['response']:
     rule_headers = rule['response']['headers']
     if rule_headers:
@@ -153,7 +152,7 @@ class GovernanceRulesManager:
       return rules
     except APIException as inst:
       if 401 <= inst.response_code <= 403:
-        print("[moesif] Unauthorized access getting application configuration. Please check your Appplication Id.")
+        print("[moesif] Unauthorized access getting application configuration. Please check your Application Id.")
       if DEBUG:
         print("[moesif] Error getting governance rules, with status code:", inst.response_code)
       return None
@@ -233,7 +232,7 @@ class GovernanceRulesManager:
     # now handle where user is not in cohodrt.
     for rule in self.user_rules.items():
       rule_info = rule[1]
-      if rule_info['applied_to'] == 'not_matching' and rule_info['_id'] in in_cohort_of_rule_hash and not in_cohort_of_rule_hash[rule_info['_id']]:
+      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash.get(rule_info['_id'], None):
         regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
           applicable_rules.append(rule_info)
@@ -271,7 +270,7 @@ class GovernanceRulesManager:
     # now handle where user is not in cohort.
     for rule in self.company_rules.items():
       rule_info = rule[1]
-      if rule_info['applied_to'] == 'not_matching' and rule_info['_id'] in in_cohort_of_rule_hash and not in_cohort_of_rule_hash[rule_info['_id']]:
+      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash.get(rule_info['_id'], None):
         regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
           applicable_rules.append(rule_info)

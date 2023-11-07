@@ -80,6 +80,7 @@ class MoesifMiddleware(object):
         self.parse_body = ParseBody()
         self.event_mapper = EventMapper()
         self.logger_helper = LoggerHelper()
+        self.wsgi_statuses = self.logger_helper.get_response_statues()
 
     def initialize_client(self):
         self.api_version = self.settings.get("API_VERSION")
@@ -153,8 +154,7 @@ class MoesifMiddleware(object):
         if 'blocked_by' in governed_response:
           # start response immediately, skip next step
           headers_as_tuple_list = [(k, v) for k, v in governed_response['headers']]
-          # TODO: Need to map gov rules status to wsgi status
-          _start_response("429 Too Many Requests", headers_as_tuple_list) # governed_response['status'],
+          _start_response(self.wsgi_statuses[governed_response['status']], headers_as_tuple_list)
           response_chunks = event_info.finish_response(governed_response['body'])
           blocked_by = governed_response['blocked_by']
         else:

@@ -8,8 +8,8 @@ import traceback
 logger = logging.getLogger(__name__)
 
 
-def get_field_value_for_path(path, request_fields = {}, request_body = {}):
-  if path and path.startswith('request.body.'):
+def get_field_value_for_path(path, request_fields={}, request_body={}):
+  if path and path.startswith('request.body.') and request_body:
     return request_body.get(path.replace('request.body.', ''), None)
   return request_fields.get(path, None)
 
@@ -22,7 +22,7 @@ def does_regex_config_match(regex_config, request_fields, request_body):
     field_value = get_field_value_for_path(path, request_fields, request_body)
     regex_pattern = condition['value']
     if field_value:
-      return re.match(regex_pattern, field_value)
+      return re.search(regex_pattern, field_value)
     else:
       return False
 
@@ -118,7 +118,7 @@ def prepare_request_fields(event_info, request_body):
     'request.verb': event_info.method,
     'request.ip': event_info.ip_address,
     'request.route': event_info.url,
-    'request.body.operationName': request_body.get('operationName', None)
+    'request.body.operationName': request_body.get('operationName', None) if request_body else None
   }
 
   return fields
@@ -233,7 +233,7 @@ class GovernanceRulesManager:
     # now handle where user is not in cohodrt.
     for rule in self.user_rules.items():
       rule_info = rule[1]
-      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule_info['_id']]:
+      if rule_info['applied_to'] == 'not_matching' and rule_info['_id'] in in_cohort_of_rule_hash and not in_cohort_of_rule_hash[rule_info['_id']]:
         regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
           applicable_rules.append(rule_info)
@@ -271,7 +271,7 @@ class GovernanceRulesManager:
     # now handle where user is not in cohort.
     for rule in self.company_rules.items():
       rule_info = rule[1]
-      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule_info['_id']]:
+      if rule_info['applied_to'] == 'not_matching' and rule_info['_id'] in in_cohort_of_rule_hash and not in_cohort_of_rule_hash[rule_info['_id']]:
         regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
           applicable_rules.append(rule_info)

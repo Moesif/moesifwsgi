@@ -3,6 +3,7 @@ import re
 from moesifapi import APIException
 from functools import reduce
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +65,19 @@ def recursively_replace_values(temp_val, merge_tag_values={}, rule_variables=Non
 
 
 def modify_response_for_one_rule(response_holder, rule, merge_tag_values):
-  rule_variables = rule['variables'];
+  rule_variables = {}
+  if 'variables' in rule:
+    rule_variables = rule['variables']
 
-  rule_headers = rule['response']['headers']
-  if rule_headers:
-    value_replaced_headers = recursively_replace_values(rule_headers, merge_tag_values, rule_variables)
-    for header_key in value_replaced_headers:
-      response_holder['headers'][header_key] = value_replaced_headers[header_key]
+  rule_headers = {}
+  if 'response' in rule and 'headers' in rule['response']['headers']:
+    rule_headers = rule['response']['headers']
+    if rule_headers:
+      value_replaced_headers = recursively_replace_values(rule_headers, merge_tag_values, rule_variables)
+      for header_key in value_replaced_headers:
+        response_holder['headers'][header_key] = value_replaced_headers[header_key]
 
-  if rule['block']:
+  if 'block' in rule and rule['block']:
     response_holder['blocked_by'] = rule['_id']
     rule_res_body = rule['response']['body']
     response_holder['body'] = recursively_replace_values(rule_res_body, merge_tag_values, rule_variables)
@@ -86,7 +91,8 @@ def apply_one_rule(response_holder, rule, config_rule_values):
   if config_rule_values:
     for one_entry in config_rule_values:
       if one_entry['rules'] == rule['_id']:
-        merge_tag_values = one_entry['values']
+        if 'value' in one_entry:
+          merge_tag_values = one_entry['values']
 
   return modify_response_for_one_rule(response_holder, rule, merge_tag_values)
 
@@ -105,18 +111,34 @@ def apply_rules(applicable_rules, response_holder, config_rules_values):
     return response_holder
 
 def format_body_for_middleware(body):
-  return [json.dumps(body)]
+  return [json.dumps(body).encode('utf-8')]
 
-def prepare_request_fields(event_info):
-  return {}
+def prepare_request_fields(event_info, request_body):
+  fields = {
+    'request.verb': event_info.method,
+    'request.ip': event_info.ip_address,
+    'request.route': event_info.url,
+    'request.body.operationName': request_body.get('operationName', None)
+  }
 
+  return fields
+
+# TODO: Need to parse base64 encode
 def prepare_request_body(event_info):
-  return {}
+  if event_info.request_body:
+    if isinstance(event_info.request_body, dict):
+      return event_info.request_body
+    if isinstance(event_info.request_body, str):
+      # return safe_json_parse(event_info['body'])
+      print("Need to parse")
+      return None
+  return None
 
 
 class GovernanceRulesManager:
   def __init__(self, api_client):
     self.api_client = api_client
+    self.rules = []
     self.user_rules = {}
     self.company_rules = {}
     self.regex_rules = []
@@ -166,19 +188,19 @@ class GovernanceRulesManager:
     if self.regex_rules:
       return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.regex_rules)
     else:
-      return [];
+      return []
 
   def get_applicable_unidentified_user_rules(self, request_fields, request_body):
     if self.unidentified_user_rules:
       return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.unidentified_user_rules)
     else:
-      return [];
+      return []
 
   def get_applicable_unidentified_company_rules(self, request_fields, request_body):
     if self.unidentified_company_rules:
       return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.unidentified_company_rules)
     else:
-      return [];
+      return []
 
   def get_user_rules(self, config_rules_values, request_fields, request_body):
     applicable_rules = []
@@ -210,10 +232,11 @@ class GovernanceRulesManager:
 
     # now handle where user is not in cohodrt.
     for rule in self.user_rules.items():
-      if rule['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule['_id']]:
-        regex_matched = does_regex_config_match(rule['regex_config'], request_fields, request_body)
+      rule_info = rule[1]
+      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule_info['_id']]:
+        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
-          applicable_rules.append(rule)
+          applicable_rules.append(rule_info)
 
     return applicable_rules
 
@@ -247,17 +270,28 @@ class GovernanceRulesManager:
 
     # now handle where user is not in cohort.
     for rule in self.company_rules.items():
-      if rule['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule['_id']]:
-        regex_matched = does_regex_config_match(rule['regex_config'], request_fields, request_body)
+      rule_info = rule[1]
+      if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash[rule_info['_id']]:
+        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
         if regex_matched:
-          applicable_rules.append(rule)
+          applicable_rules.append(rule_info)
 
     return applicable_rules
 
 
+  # test with gzip body
+  # test with base64 body
+  # test with merge tags
+  # test with company cohort
+  # test with regex_config
+  # Add try/catch
+
   def govern_request(self, config, event_info, user_id, company_id):
-    request_fields = prepare_request_fields(event_info)
+
     request_body = prepare_request_body(event_info)
+    request_fields = prepare_request_fields(event_info, request_body)
+
+    config_json = json.loads(config.raw_body)
 
     response_holder = {
       'status': None,
@@ -267,25 +301,25 @@ class GovernanceRulesManager:
 
     applicable_regex_rules = self.get_applicable_regex_rules(request_fields, request_body)
 
-    response_holder = apply_rules(applicable_regex_rules, response_holder)
+    response_holder = apply_rules(applicable_regex_rules, response_holder, None)
 
     if company_id is None:
       unidentified_company_rules = self.get_applicable_unidentified_company_rules(request_fields, request_body)
-      response_holder = apply_rules(unidentified_company_rules, response_holder)
+      response_holder = apply_rules(unidentified_company_rules, response_holder, None)
     else:
-      config_rules_values = config.get('company_rules', {}).get(company_id)
+      config_rules_values = config_json.get('company_rules', {}).get(company_id)
       company_rules = self.get_company_rules(config_rules_values, request_fields, request_body)
       response_holder = apply_rules(company_rules, response_holder, config_rules_values)
 
     if user_id is None:
       unidentified_user_rules = self.get_applicable_unidentified_user_rules(request_fields, request_body)
-      response_holder = apply_rules(unidentified_user_rules, response_holder)
+      response_holder = apply_rules(unidentified_user_rules, response_holder, None)
     else:
-      config_rules_values = config.get('user_rules', {}).get(user_id)
+      config_rules_values = config_json.get('user_rules', {}).get(user_id)
       user_rules = self.get_user_rules(config_rules_values, request_fields, request_body)
       response_holder = apply_rules(user_rules, response_holder, config_rules_values)
 
-    if response_holder['blocked_by']:
+    if 'blocked_by' in response_holder:
       response_holder['body'] = format_body_for_middleware(response_holder['body'])
 
     return response_holder

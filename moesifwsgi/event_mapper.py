@@ -10,7 +10,7 @@ class EventMapper:
         self.logger_helper = LoggerHelper()
 
     @classmethod
-    def to_event(cls, data, event_req, event_rsp):
+    def to_event(cls, data, event_req, event_rsp, blocked_by):
         # Prepare Event Model
         return EventModel(request=event_req,
                           response=event_rsp,
@@ -18,7 +18,8 @@ class EventMapper:
                           company_id=data.company_id,
                           session_token=data.session_token,
                           metadata=data.metadata,
-                          direction="Incoming")
+                          direction="Incoming",
+                          blocked_by=blocked_by)
 
     @classmethod
     def to_request(cls, data, log_body, api_version):

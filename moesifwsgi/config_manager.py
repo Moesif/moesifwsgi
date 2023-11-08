@@ -3,19 +3,20 @@ from readerwriterlock import rwlock
 from datetime import datetime, timedelta
 from moesifapi.exceptions.api_exception import *
 import logging
-
+from .governance_manager import GovernanceRulesManager
 
 logger = logging.getLogger(__name__)
 
 
 class ConfigUpdateManager:
-    """ This class is responsible for updating the configuration from the server.
+    """ This class is responsible for updating the configuration and governance rules from the server.
     It is also responsible for caching the configuration and returning the sampling percentage.
     """
     def __init__(self, api_client, app_config, debug):
         self.MAX_ETAG_REFRESH_TIME_IN_MIN = 5 # in minutes
         self.api_client = api_client
         self.app_config = app_config
+        self.govern_manager = GovernanceRulesManager(api_client)
         self.debug = debug
         # We use a single background thread to update the configuration.
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
@@ -67,6 +68,9 @@ class ConfigUpdateManager:
         config = self.app_config.get_config(self.api_client, self.debug)
         # we don't need the sample rate since it is always accessed via the get_sampling_percentage method.
         new_etag, _, new_last_updated_time = self.app_config.parse_configuration(config, self.debug)
+        # also load rules
+        self.govern_manager.load_rules(self.debug)
+
         # Acquire a lock and update the configuration only if the etag has changed since the last time we updated it.
         with self._lock.gen_wlock():
             # We need to check the etag again because it might have changed while we were waiting for the lock.
@@ -86,3 +90,11 @@ class ConfigUpdateManager:
         """
         with self._lock.gen_rlock():
             return self.app_config.get_sampling_percentage(event_data, self.config, user_id, company_id)
+
+
+    def have_governance_rules(self):
+        with self._lock.gen_rlock():
+            return self.govern_manager.has_rules()
+
+    def govern_request(self, requestData, userId, companyId, request_body):
+        return self.govern_manager.govern_request(self.config, requestData, userId, companyId, request_body)

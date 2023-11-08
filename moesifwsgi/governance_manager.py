@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_field_value_for_path(path, request_fields={}, request_body={}):
-  if path and path.startswith('request.body.') and request_body:
+  if path and path.startswith('request.body.') and request_body and isinstance(request_body, dict):
     return request_body.get(path.replace('request.body.', ''), None)
   return request_fields.get(path, None)
 

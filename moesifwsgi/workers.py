@@ -2,7 +2,9 @@ import math
 import queue
 import threading
 import time
-
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import atexit
 from moesifwsgi.logger_helper import LoggerHelper
 import logging
 
@@ -173,3 +175,45 @@ class BatchedWorkerPool:
         # Clear workers
         self.batcher = None
         self.workers = []
+
+
+class ConfigJobScheduler:
+
+    def __init__(self, debug, config):
+        self.DEBUG = debug
+        self.scheduler = None
+        self.config = config
+
+    def exit_config_job(self):
+        try:
+            # Shut down the scheduler
+            self.scheduler.remove_job('moesif_config_job')
+            self.scheduler.shutdown()
+        except Exception as ex:
+            if self.DEBUG:
+                print("Error during shut down of the config scheduler")
+                print(str(ex))
+
+    def schedule_background_job(self):
+        try:
+            if not self.scheduler:
+                self.scheduler = BackgroundScheduler(daemon=True)
+            if not self.scheduler.get_jobs():
+                self.scheduler.start()
+                self.scheduler.add_job(
+                    func=lambda: self.config.update_configuration(),
+                    trigger=IntervalTrigger(seconds=60),
+                    id='moesif_config_job',
+                    name='Schedule config job every 60 second',
+                    replace_existing=True)
+
+                # Avoid passing logging message to the ancestor loggers
+                logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
+                logging.getLogger('apscheduler.executors.default').propagate = False
+
+                # Exit handler when exiting the app
+                atexit.register(lambda: self.exit_config_job)
+        except Exception as ex:
+            if self.DEBUG:
+                print("Error when scheduling the config job")
+                print(str(ex))

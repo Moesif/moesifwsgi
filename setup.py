@@ -28,7 +28,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.9.0',
+    version='1.9.1',
 
     description='Moesif Middleware for Python WSGI based platforms (Flask, Bottle & Others)',
     long_description=long_description,
@@ -88,11 +88,12 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'requests>=2.0.0', 
-        'isodatetimehandler>=1.0.0', 
-        'moesifapi>=1.4.0', 
-        'moesifpythonrequest>=0.3.0', 
-        'readerwriterlock>=1.0.9'
+        'requests>=2.30.0',
+        'isodatetimehandler>=1.0.2',
+        'moesifapi>=1.4.1',
+        'moesifpythonrequest>=0.3.1',
+        'readerwriterlock>=1.0.9',
+        'apscheduler>=3.10.4'
     ],
 
     # List additional groups of dependencies here (e.g. development

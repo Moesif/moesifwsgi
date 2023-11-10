@@ -33,7 +33,7 @@ class ConfigUpdateManager:
         try:
             # load the config at the start
             with self._lock.gen_wlock():
-                self._executor.submit(self.update_configuration, None)
+                self._executor.submit(self.update_configuration)
         except Exception as e:
             logger.exception(f"Error while fetching configuration on start", e)
             pass
@@ -58,9 +58,9 @@ class ConfigUpdateManager:
                 # saving etag now will prevent us from updating the configuration again while the update is in progress.
                 self.current_etag = response_etag
                 # Offload the actual update to another thread
-                self._executor.submit(self.update_configuration, response_etag)
+                self._executor.submit(self.update_configuration)
 
-    def update_configuration(self, response_etag):
+    def update_configuration(self):
         """ Update the configuration from the server.
         This is called by the single purpose update thread in self._executor.
         The moesifpythonrequest.app_config.AppConfig class perfoms exception handling.

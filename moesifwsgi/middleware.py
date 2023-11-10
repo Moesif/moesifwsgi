@@ -6,7 +6,7 @@ from datetime import datetime
 import sys
 
 from moesifwsgi.config_manager import ConfigUpdateManager
-from moesifwsgi.workers import BatchedWorkerPool
+from moesifwsgi.workers import BatchedWorkerPool, ConfigJobScheduler
 
 try:
     from cStringIO import StringIO
@@ -47,6 +47,7 @@ class MoesifMiddleware(object):
     def __init__(self, app, settings):
         self.app = app
         self.settings = settings
+        self.is_config_job_scheduled = False
         self.DEBUG = self.settings.get("DEBUG", False)
         self.initialize_logger()
         self.validate_settings()
@@ -87,6 +88,17 @@ class MoesifMiddleware(object):
         self.client = MoesifAPIClient(self.settings.get("APPLICATION_ID"))
         self.api_client = self.client.api
 
+    # Schedule background job to fetch the app configuration periodically (every 60second)
+    def schedule_config_job(self):
+        try:
+            ConfigJobScheduler(self.DEBUG, self.config).schedule_background_job()
+            self.is_config_job_scheduled = True
+        except Exception as ex:
+            self.is_config_job_scheduled = False
+            if self.DEBUG:
+                print('Error while starting the config scheduler job in background')
+                print(str(ex))
+
     def initialize_config(self):
         if self.DEBUG:
             logger.debug("Debug is enabled. Starting Moesif middleware for pid - " + self.logger_helper.get_worker_pid())
@@ -101,6 +113,7 @@ class MoesifMiddleware(object):
         self.client_ip = ClientIp()
         self.app_config = AppConfig()
         self.config = ConfigUpdateManager(self.api_client, self.app_config, self.DEBUG)
+        self.schedule_config_job()
 
     def initialize_worker_pool(self):
         # Create queues and threads which will batch and send events in the background
@@ -234,6 +247,10 @@ class MoesifMiddleware(object):
         # add_event does not throw exceptions so this is unexepected
         except Exception as ex:
             logger.exception("Error while adding event to the queue for", ex)
+
+        # Check if scheduler job is running, if not running, scheduled a new job
+        if not self.is_config_job_scheduled:
+            self.schedule_config_job()
 
 
     def process_data(self, data, blocked_by):

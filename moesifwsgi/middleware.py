@@ -104,8 +104,8 @@ class MoesifMiddleware(object):
             logger.debug("Debug is enabled. Starting Moesif middleware for pid - " + self.logger_helper.get_worker_pid())
             response_catcher = HttpResponseCatcher()
             self.api_client.http_call_back = response_catcher
-            Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.6.1"
+        Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
+        Configuration.version = "moesifwsgi-python/1.9.3"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             self.start_capture_outgoing()
 

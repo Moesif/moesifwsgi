@@ -191,8 +191,8 @@ class ConfigJobScheduler:
             self.scheduler.shutdown()
         except Exception as ex:
             if self.DEBUG:
-                print("Error during shut down of the config scheduler")
-                print(str(ex))
+                logger.info("Error during shut down of the config scheduler")
+                logger.info(str(ex))
 
     def schedule_background_job(self):
         try:
@@ -215,5 +215,5 @@ class ConfigJobScheduler:
                 atexit.register(lambda: self.exit_config_job)
         except Exception as ex:
             if self.DEBUG:
-                print("Error when scheduling the config job")
-                print(str(ex))
+                logger.info("Error when scheduling the config job")
+                logger.info(str(ex))

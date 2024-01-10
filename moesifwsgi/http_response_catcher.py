@@ -4,6 +4,9 @@
 
 from moesifapi.http.http_call_back import *
 from .logger_helper import LoggerHelper
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HttpResponseCatcher(HttpCallBack):
 
@@ -22,10 +25,10 @@ class HttpResponseCatcher(HttpCallBack):
 
     def on_after_response(self, context):
         self.response = context.response
-        print('status from the Moesif API call for pid - ' + self.logger_helper.get_worker_pid())
-        print(context.response.status_code)
-        print('headers from moesif response for pid - ' + self.logger_helper.get_worker_pid())
-        print(context.response.headers)
-        print('body from moesif response for pid - ' + self.logger_helper.get_worker_pid())
-        print(context.response.raw_body)
+        logger.info('status from the Moesif API call for pid - ' + self.logger_helper.get_worker_pid())
+        logger.info(context.response.status_code)
+        logger.info('headers from moesif response for pid - ' + self.logger_helper.get_worker_pid())
+        logger.info(context.response.headers)
+        logger.info('body from moesif response for pid - ' + self.logger_helper.get_worker_pid())
+        logger.info(context.response.raw_body)
         #pass

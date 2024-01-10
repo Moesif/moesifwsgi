@@ -3,7 +3,6 @@ import re
 from moesifapi import APIException
 from functools import reduce
 import logging
-import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -141,13 +140,13 @@ class GovernanceRulesManager:
       return rules
     except APIException as inst:
       if 401 <= inst.response_code <= 403:
-        print("[moesif] Unauthorized access getting application configuration. Please check your Application Id.")
+        logger.error("[moesif] Unauthorized access getting application configuration. Please check your Application Id.")
       if DEBUG:
-        print("[moesif] Error getting governance rules, with status code:", inst.response_code)
+        logger.info("[moesif] Error getting governance rules, with status code:", inst.response_code)
       return None
     except Exception as ex:
       if DEBUG:
-        print("[moesif] Error getting governance rules:", ex)
+        logger.info("[moesif] Error getting governance rules:", ex)
       return None
 
   def cache_rules(self, rules):

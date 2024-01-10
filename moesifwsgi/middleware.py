@@ -96,8 +96,8 @@ class MoesifMiddleware(object):
         except Exception as ex:
             self.is_config_job_scheduled = False
             if self.DEBUG:
-                print('Error while starting the config scheduler job in background')
-                print(str(ex))
+                logger.info('Error while starting the config scheduler job in background')
+                logger.info(str(ex))
 
     def initialize_config(self):
         if self.DEBUG:

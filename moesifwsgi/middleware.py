@@ -96,13 +96,12 @@ class MoesifMiddleware(object):
         except Exception as ex:
             self.is_config_job_scheduled = False
             if self.DEBUG:
-                print('Error while starting the config scheduler job in background')
-                print(str(ex))
+                logger.info(f'Error while starting the config scheduler job in background: {str(ex)}')
 
     def initialize_config(self):
         if self.DEBUG:
-            logger.debug("Debug is enabled. Starting Moesif middleware for pid - " + self.logger_helper.get_worker_pid())
-            response_catcher = HttpResponseCatcher()
+            logger.debug(f"Debug is enabled. Starting Moesif middleware for pid - {self.logger_helper.get_worker_pid()}")
+            response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
         Configuration.version = "moesifwsgi-python/1.9.3"
@@ -160,7 +159,7 @@ class MoesifMiddleware(object):
                 for pair in final_headers:
                     response_headers_mapping[pair[0]] = pair[1]
             except Exception as e:
-                logger.exception("Error while parsing response headers", e)
+                logger.exception(f"Error while parsing response headers: {str(e)}")
             return start_response(status, final_headers, *args)
 
         blocked_by = None
@@ -181,7 +180,7 @@ class MoesifMiddleware(object):
         try:
             logger.debug(f"event response time: {event_info.response_time}")
         except Exception as e:
-            logger.exception(f"Error while fetching response time", e)
+            logger.exception(f"Error while fetching response time: {str(e)}")
 
         self.add_user_and_metadata(event_info, environ, response_headers_mapping)
 
@@ -228,7 +227,8 @@ class MoesifMiddleware(object):
         # if the event has a sample rate of less than 100, then we need to check if this event should be skipped and not sent to Moesif
         random_percentage = random.random() * 100
         if random_percentage >= event_sampling_percentage:
-            logger.debug("Skipped Event due to sampling percentage: " + str(event_sampling_percentage) + " and random percentage: " + str(random_percentage))
+            logger.debug(f"Skipped Event due to sampling percentage: {str(event_sampling_percentage)}"
+                         f" and random percentage: {str(random_percentage)}")
             return
 
         # Add proportionate weight to the event for sampling percentage lower than 100
@@ -238,15 +238,15 @@ class MoesifMiddleware(object):
             if self.worker_pool.add_event(event_data):
                 logger.debug("Add Event to the queue")
                 if self.DEBUG:
-                    logger.debug("Event added to the queue - " + APIHelper.json_serialize(event_data))
+                    logger.debug(f"Event added to the queue: {APIHelper.json_serialize(event_data)}")
             else:
                 self.dropped_events += 1
-                logger.info("Dropped Event due to queue capacity drop_count=" + str(self.dropped_events))
+                logger.info(f"Dropped Event due to queue capacity drop_count: {str(self.dropped_events)}")
                 if self.DEBUG:
-                    logger.debug("Event dropped - " + APIHelper.json_serialize(event_data))
+                    logger.debug(f"Event dropped: {APIHelper.json_serialize(event_data)}")
         # add_event does not throw exceptions so this is unexepected
         except Exception as ex:
-            logger.exception("Error while adding event to the queue for", ex)
+            logger.exception(f"Error while adding event to the queue: {str(ex)}")
 
         # Check if scheduler job is running, if not running, scheduled a new job
         if not self.is_config_job_scheduled:

@@ -8,7 +8,9 @@ from .parse_body import ParseBody
 from io import BytesIO
 import json
 import base64
+import logging
 
+logger = logging.getLogger(__name__)
 
 class LoggerHelper:
 
@@ -103,8 +105,7 @@ class LoggerHelper:
                 return str(json_decode[field])
         except Exception as e:
             if debug:
-                print("Error while parsing authorization header to fetch user id.")
-                print(e)
+                logger.info(f"Error while parsing authorization header to fetch user id: {str(e)}")
         return None
 
     def get_user_id(self, environ, settings, app, debug, response_headers=dict()):
@@ -115,8 +116,7 @@ class LoggerHelper:
                 try:
                     username = identify_user(app, environ, response_headers)
                 except Exception as e:
-                    print("Exception in identify_user function, please check your identify_user method ")
-                    print(e)
+                    logger.warning(f"Exception in identify_user function, please check your identify_user method: {str(e)}")
             if not username:
                 # Parse request headers
                 request_headers = dict([(k.lower(), v) for k, v in self.parse_request_headers(environ)])
@@ -176,8 +176,7 @@ class LoggerHelper:
                             username = self.parse_authorization_header(token, field, debug)
         except Exception as e:
             if debug:
-                print("can not execute identify_user function, please check moesif settings.")
-                print(e)
+                logger.info(f"can not execute identify_user function, please check moesif settings: {str(e)}")
         return username
 
     @classmethod
@@ -189,8 +188,7 @@ class LoggerHelper:
                 company_id = identify_company(app, environ, response_headers)
         except Exception as e:
             if debug:
-                print("can not execute identify_company function, please check moesif settings.")
-                print(e)
+                logger.info(f"can not execute identify_company function, please check moesif settings: {str(e)}")
         return company_id
 
     @classmethod
@@ -202,8 +200,7 @@ class LoggerHelper:
                 metadata = get_meta(app, environ)
         except Exception as e:
             if debug:
-                print("can not execute GET_METADATA function, please check moesif settings.")
-                print(e)
+                logger.info(f"can not execute GET_METADATA function, please check moesif settings: {str(e)}")
         return metadata
 
     @classmethod
@@ -215,8 +212,7 @@ class LoggerHelper:
                 session_token = get_session(app, environ)
         except Exception as e:
             if debug:
-                print("can not execute get_session function, please check moesif settings.")
-                print(e)
+                logger.info(f"can not execute get_session function, please check moesif settings: {str(e)}")
         return session_token
 
     @classmethod
@@ -229,7 +225,7 @@ class LoggerHelper:
                 return False
         except:
             if debug:
-                print("error trying to execute skip function.")
+                logger.info("error trying to execute skip function.")
             return False
 
     @classmethod
@@ -240,7 +236,7 @@ class LoggerHelper:
                 return mask_event_model(event_model)
         except:
             if debug:
-                print("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.")
+                logger.info("Can not execute MASK_EVENT_MODEL function. Please check moesif settings.")
         return event_model
 
     @classmethod

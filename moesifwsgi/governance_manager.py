@@ -105,7 +105,7 @@ def apply_rules(applicable_rules, response_holder, config_rules_values):
 
     return response_holder
   except Exception as ex:
-    logger.debug('failed to apply rules ' + str(ex))
+    logger.warning(f'failed to apply rules: {str(ex)}')
     return response_holder
 
 def format_body_for_middleware(body):
@@ -142,11 +142,11 @@ class GovernanceRulesManager:
       if 401 <= inst.response_code <= 403:
         logger.error("[moesif] Unauthorized access getting application configuration. Please check your Application Id.")
       if DEBUG:
-        logger.info("[moesif] Error getting governance rules, with status code:", inst.response_code)
+        logger.info(f"[moesif] Error getting governance rules, with status code: {inst.response_code}")
       return None
     except Exception as ex:
       if DEBUG:
-        logger.info("[moesif] Error getting governance rules:", ex)
+        logger.info(f"[moesif] Error getting governance rules: {str(ex)}")
       return None
 
   def cache_rules(self, rules):

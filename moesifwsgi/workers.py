@@ -41,7 +41,7 @@ class Batcher(threading.Thread):
                     logger.debug("Putting batch in queue")
                     self.batch_queue.put(batch)
             except Exception as e:
-                logger.exception(f"Exception occurred in Batcher thread", e)
+                logger.exception(f"Exception occurred in Batcher thread. {str(e)}")
                 continue
 
         # After stop event is set, continue to drain the input queue until it's empty
@@ -52,7 +52,7 @@ class Batcher(threading.Thread):
                 if batch:
                     self.batch_queue.put(batch)
             except Exception as e:
-                logger.exception(f"Exception occurred in Batcher thread", e)
+                logger.exception(f"Exception occurred in Batcher thread. {str(e)}")
                 continue
 
     def _create_batch(self, block):
@@ -67,7 +67,7 @@ class Batcher(threading.Thread):
                 # if block is False, this will return immediately when the input queue is empty, and this is used during shutdown
                 item = self.event_queue.get(block=block, timeout=max_wait)
                 batch.append(item)
-                logger.debug("Got event from queue " + item.request.uri)
+                logger.debug(f"Got event from queue {str(item.request.uri)}")
             except queue.Empty:
                 pass
             # Calculate the max wait time for the next event in the batch based on the timeout
@@ -105,7 +105,7 @@ class Worker(threading.Thread):
             except queue.Empty:
                 continue
             except Exception as e:
-                logger.exception(f"Exception occurred in Worker thread", e)
+                logger.exception(f"Exception occurred in Worker thread. {str(e)}")
                 continue
 
     def send_events(self, batch_events):
@@ -118,7 +118,8 @@ class Worker(threading.Thread):
             if self.debug:
                 logger.debug("Events sent successfully to Moesif")
         except Exception as ex:
-            logger.exception("Error sending event to Moesif", ex)
+            logger.exception(f"Error sending event to Moesif. {str(ex)}")
+
 
 class BatchedWorkerPool:
     """
@@ -191,8 +192,7 @@ class ConfigJobScheduler:
             self.scheduler.shutdown()
         except Exception as ex:
             if self.DEBUG:
-                logger.info("Error during shut down of the config scheduler")
-                logger.info(str(ex))
+                logger.info(f"Error during shut down of the config scheduler. {str(ex)}")
 
     def schedule_background_job(self):
         try:
@@ -215,5 +215,4 @@ class ConfigJobScheduler:
                 atexit.register(lambda: self.exit_config_job)
         except Exception as ex:
             if self.DEBUG:
-                logger.info("Error when scheduling the config job")
-                logger.info(str(ex))
+                logger.info(f"Error when scheduling the config job. {str(ex)}")

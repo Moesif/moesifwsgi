@@ -35,7 +35,7 @@ class ConfigUpdateManager:
             with self._lock.gen_wlock():
                 self._executor.submit(self.update_configuration)
         except Exception as e:
-            logger.exception(f"Error while fetching configuration on start", e)
+            logger.exception(f"Error while fetching configuration on start: {str(e)}")
             pass
 
     def check_and_update(self, response_etag):
@@ -82,7 +82,7 @@ class ConfigUpdateManager:
                 self.config = config
                 self.last_updated_time = new_last_updated_time
                 if self.debug:
-                    logger.debug("config update at " + str(self.last_updated_time))
+                    logger.debug(f"config update at: {str(self.last_updated_time)}")
 
     def get_sampling_percentage(self, event_data, user_id, company_id):
         """Get sampling percentage.

@@ -152,6 +152,9 @@ to associate this event with custom metadata. For example, you may want to save 
 ### __`EVENT_WORKER_COUNT`__
 (optional) __int__, default 2, the number of worker threads to use for uploading events to Moesif.  If you have a large number of events being logged, increasing this number can improve upload performance.
 
+### __`DISABLE_BATCHING`__
+(optional)
+
 #### __`BATCH_SIZE`__
 (optional) __int__, default 100, Maximum batch size when sending events to Moesif when reading from the queue
 

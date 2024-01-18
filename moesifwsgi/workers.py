@@ -19,7 +19,7 @@ class Batcher(threading.Thread):
     """
     def __init__(self, event_queue, batch_queue, batch_size, timeout, debug):
         super().__init__(daemon=True)
-        logger.debug("Initializing Batcher")
+        print("Initializing Batcher")
         self.event_queue = event_queue # input queue
         self.batch_queue = batch_queue # output queue
         # batch_size is used to control how many events are in a batch maximum
@@ -38,10 +38,10 @@ class Batcher(threading.Thread):
             try:
                 batch = self._create_batch(block=True)
                 if batch:
-                    logger.debug("Putting batch in queue")
+                    print("Putting batch in queue")
                     self.batch_queue.put(batch)
             except Exception as e:
-                logger.exception(f"Exception occurred in Batcher thread. {str(e)}")
+                print(f"Exception occurred in Batcher thread. {str(e)}")
                 continue
 
         # After stop event is set, continue to drain the input queue until it's empty
@@ -52,7 +52,7 @@ class Batcher(threading.Thread):
                 if batch:
                     self.batch_queue.put(batch)
             except Exception as e:
-                logger.exception(f"Exception occurred in Batcher thread. {str(e)}")
+                print(f"Exception occurred in Batcher thread. {str(e)}")
                 continue
 
     def _create_batch(self, block):
@@ -67,7 +67,7 @@ class Batcher(threading.Thread):
                 # if block is False, this will return immediately when the input queue is empty, and this is used during shutdown
                 item = self.event_queue.get(block=block, timeout=max_wait)
                 batch.append(item)
-                logger.debug(f"Got event from queue {str(item.request.uri)}")
+                print(f"Got event from queue {str(item.request.uri)}")
             except queue.Empty:
                 pass
             # Calculate the max wait time for the next event in the batch based on the timeout
@@ -82,7 +82,7 @@ class Worker(threading.Thread):
     """
     def __init__(self, queue, api_client, config, debug):
         super().__init__(daemon=True)
-        logger.debug("Initializing Worker")
+        print("Initializing Worker")
         self.queue = queue
         self.api_client = api_client
         self.config = config
@@ -105,20 +105,20 @@ class Worker(threading.Thread):
             except queue.Empty:
                 continue
             except Exception as e:
-                logger.exception(f"Exception occurred in Worker thread. {str(e)}")
+                print(f"Exception occurred in Worker thread. {str(e)}")
                 continue
 
     def send_events(self, batch_events):
         try:
-            logger.debug("Sending events to Moesif")
+            print("Sending events to Moesif")
             batch_events_api_response = self.api_client.create_events_batch(batch_events)
             # Update the configuration if necessary
             etag = batch_events_api_response.get("X-Moesif-Config-ETag")
             self.config.check_and_update(etag)
             if self.debug:
-                logger.debug("Events sent successfully to Moesif")
+                print("Events sent successfully to Moesif")
         except Exception as ex:
-            logger.exception(f"Error sending event to Moesif. {str(ex)}")
+            print(f"Error sending event to Moesif. {str(ex)}")
 
 
 class BatchedWorkerPool:
@@ -128,7 +128,7 @@ class BatchedWorkerPool:
     for adding events to the event queue.
     """
     def __init__(self, worker_count, api_client, config, debug, max_queue_size, batch_size, timeout):
-        logger.debug("Initializing BatchedWorkerPool")
+        print("Initializing BatchedWorkerPool")
         self.event_queue = queue.Queue(maxsize=max_queue_size)
         self.batch_queue = queue.Queue(maxsize=math.ceil(max_queue_size / batch_size))
         self.batch_size = batch_size
@@ -139,10 +139,12 @@ class BatchedWorkerPool:
         self.debug = debug
 
         # Start batcher
+        print("@@@@ Start batcher #### ")
         self.batcher = Batcher(self.event_queue, self.batch_queue, self.batch_size, self.timeout, self.debug)
         self.batcher.start()
 
         # Start workers
+        print("@@@@ Start workers #### ")
         self.workers = []
         for _ in range(self.worker_count):
             worker = Worker(self.batch_queue, self.api_client, self.config, self.debug)
@@ -184,6 +186,7 @@ class ConfigJobScheduler:
         self.DEBUG = debug
         self.scheduler = None
         self.config = config
+        print("@@@@ Init config jobs  #### ")
 
     def exit_config_job(self):
         try:
@@ -192,7 +195,7 @@ class ConfigJobScheduler:
             self.scheduler.shutdown()
         except Exception as ex:
             if self.DEBUG:
-                logger.info(f"Error during shut down of the config scheduler. {str(ex)}")
+                print(f"Error during shut down of the config scheduler. {str(ex)}")
 
     def schedule_background_job(self):
         try:
@@ -202,9 +205,9 @@ class ConfigJobScheduler:
                 self.scheduler.start()
                 self.scheduler.add_job(
                     func=lambda: self.config.update_configuration(),
-                    trigger=IntervalTrigger(seconds=60),
+                    trigger=IntervalTrigger(seconds=300),
                     id='moesif_config_job',
-                    name='Schedule config job every 60 second',
+                    name='Schedule config job every 300 second',
                     replace_existing=True)
 
                 # Avoid passing logging message to the ancestor loggers
@@ -215,4 +218,4 @@ class ConfigJobScheduler:
                 atexit.register(lambda: self.exit_config_job)
         except Exception as ex:
             if self.DEBUG:
-                logger.info(f"Error when scheduling the config job. {str(ex)}")
+                print(f"Error when scheduling the config job. {str(ex)}")

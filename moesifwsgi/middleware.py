@@ -45,6 +45,9 @@ class MoesifMiddleware(object):
     """WSGI Middleware for recording of request-response"""
 
     def __init__(self, app, settings):
+
+        print("!!!! INIT MOESIF !!!!")
+
         self.app = app
         self.settings = settings
         self.is_config_job_scheduled = False
@@ -52,13 +55,29 @@ class MoesifMiddleware(object):
         self.initialize_logger()
         self.validate_settings()
 
+        print("DEBUG - ")
+        print(self.DEBUG)
+
+        print("DB -")
+        self.disable_batching = self.settings.get("DISABLE_BATCHING", False)
+        print(self.disable_batching)
+
         self.initialize_counter()
         self.initialize_client()
         self.initialize_config()
-        self.initialize_worker_pool()
 
-        # graceful shutodown handlers
-        atexit.register(self.worker_pool.stop)
+        if not self.disable_batching:
+            print(" @@@@@@ initialize batch - @@@@@@  ")
+            self.initialize_worker_pool()
+
+            # graceful shutodown handlers
+            atexit.register(self.worker_pool.stop)
+
+        else:
+            print("@@@@@@  No need to initialize batch - @@@@@@ ")
+            pass
+
+
 
     def initialize_logger(self):
         """Initialize logger mirroring the debug and stdout behavior of previous print statements for compatibility"""
@@ -73,6 +92,7 @@ class MoesifMiddleware(object):
             raise Exception("Moesif Application ID is required in settings")
 
     def initialize_counter(self):
+        print("-- initialize_counter ---- ")
         try:
             self.request_counter = itertools.count().next  # Threadsafe counter for Python 2
         except AttributeError:
@@ -84,23 +104,26 @@ class MoesifMiddleware(object):
         self.wsgi_statuses = self.logger_helper.get_response_statues()
 
     def initialize_client(self):
+        print("-- initialize_client ---- ")
         self.api_version = self.settings.get("API_VERSION")
         self.client = MoesifAPIClient(self.settings.get("APPLICATION_ID"))
         self.api_client = self.client.api
 
     # Schedule background job to fetch the app configuration periodically (every 60second)
     def schedule_config_job(self):
+        print("-- schedule_config_job ---- ")
         try:
             ConfigJobScheduler(self.DEBUG, self.config).schedule_background_job()
             self.is_config_job_scheduled = True
         except Exception as ex:
             self.is_config_job_scheduled = False
             if self.DEBUG:
-                logger.info(f'Error while starting the config scheduler job in background: {str(ex)}')
+                print(f'Error while starting the config scheduler job in background: {str(ex)}')
 
     def initialize_config(self):
+        print("-- inint config ---- ")
         if self.DEBUG:
-            logger.debug(f"Debug is enabled. Starting Moesif middleware for pid - {self.logger_helper.get_worker_pid()}")
+            print(f"Debug is enabled. Starting Moesif middleware for pid - {self.logger_helper.get_worker_pid()}")
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
@@ -127,8 +150,9 @@ class MoesifMiddleware(object):
         )
 
     def __call__(self, environ, start_response):
+        print("--- __call__ ---")
         request_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
-        logger.debug(f"event request time: {request_time}")
+        print(f"event request time: {request_time}")
 
         event_info = self.prepare_event_info(environ, start_response, request_time)
         response_headers_mapping = {}
@@ -142,6 +166,9 @@ class MoesifMiddleware(object):
 
         # monkey patch the default start_response to capture data and add headers
         def _start_response(status, response_headers, *args):
+
+            print("--- _start_response ---")
+
             # Capture status and response_headers for later processing
             event_info.capture_response_status(status, response_headers, self.DEBUG)
 
@@ -159,7 +186,7 @@ class MoesifMiddleware(object):
                 for pair in final_headers:
                     response_headers_mapping[pair[0]] = pair[1]
             except Exception as e:
-                logger.exception(f"Error while parsing response headers: {str(e)}")
+                print(f"Error while parsing response headers: {str(e)}")
             return start_response(status, final_headers, *args)
 
         blocked_by = None
@@ -178,16 +205,18 @@ class MoesifMiddleware(object):
         environ["moesif.response_headers"] = response_headers_mapping
 
         try:
-            logger.debug(f"event response time: {event_info.response_time}")
+            print(f"event response time: {event_info.response_time}")
         except Exception as e:
-            logger.exception(f"Error while fetching response time: {str(e)}")
+            print(f"Error while fetching response time: {str(e)}")
 
         self.add_user_and_metadata(event_info, environ, response_headers_mapping)
 
         try:
+            print("--- Returning response ---")
             return response_chunks
         finally:
-            self.process_and_add_event_if_required(event_info, environ, response_headers_mapping, blocked_by)
+            print("--- Calling  process_and_add_event_if_required ---")
+            self.process_and_add_event_if_required(event_info, environ, response_headers_mapping, blocked_by, self.disable_batching)
 
     def prepare_event_info(self, environ, start_response, request_time):
         event_info = DataHolder(
@@ -208,12 +237,12 @@ class MoesifMiddleware(object):
         event_info.set_metadata(self.logger_helper.get_metadata(environ, self.settings, self.app, self.DEBUG))
         event_info.set_session_token(self.logger_helper.get_session_token(environ, self.settings, self.app, self.DEBUG))
 
-    def process_and_add_event_if_required(self, event_info, environ, response_headers_mapping, blocked_by):
+    def process_and_add_event_if_required(self, event_info, environ, response_headers_mapping, blocked_by, disable_batching):
         if event_info is None:
-            logger.debug("Skipped Event as the moesif event model is None")
+            print("Skipped Event as the moesif event model is None")
             return
         if self.logger_helper.should_skip(environ, self.settings, self.app, self.DEBUG):
-            logger.debug("Skipped Event using should_skip configuration option")
+            print("Skipped Event using should_skip configuration option")
             return
 
         # Prepare event to be sent to Moesif and check the config for applicable sampling rules
@@ -227,30 +256,43 @@ class MoesifMiddleware(object):
         # if the event has a sample rate of less than 100, then we need to check if this event should be skipped and not sent to Moesif
         random_percentage = random.random() * 100
         if random_percentage >= event_sampling_percentage:
-            logger.debug(f"Skipped Event due to sampling percentage: {str(event_sampling_percentage)}"
+            print(f"Skipped Event due to sampling percentage: {str(event_sampling_percentage)}"
                          f" and random percentage: {str(random_percentage)}")
             return
 
         # Add proportionate weight to the event for sampling percentage lower than 100
         event_data.weight = 1 if event_sampling_percentage == 0 else math.floor(100 / event_sampling_percentage)
-        try:
-            # Add Event to the queue if able and count the dropped event if at capacity
-            if self.worker_pool.add_event(event_data):
-                logger.debug("Add Event to the queue")
-                if self.DEBUG:
-                    logger.debug(f"Event added to the queue: {APIHelper.json_serialize(event_data)}")
-            else:
-                self.dropped_events += 1
-                logger.info(f"Dropped Event due to queue capacity drop_count: {str(self.dropped_events)}")
-                if self.DEBUG:
-                    logger.debug(f"Event dropped: {APIHelper.json_serialize(event_data)}")
-        # add_event does not throw exceptions so this is unexepected
-        except Exception as ex:
-            logger.exception(f"Error while adding event to the queue: {str(ex)}")
 
-        # Check if scheduler job is running, if not running, scheduled a new job
-        if not self.is_config_job_scheduled:
-            self.schedule_config_job()
+        print("---$$$$$$$$ disable_batching before sending events $$$$$$$$----")
+        print(disable_batching)
+
+        if disable_batching:
+            try:
+                print(" $$$$$$$$ Sending single event $$$$$$$$")
+                self.api_client.create_event(event_data)
+            except Exception as ex:
+                print(f"$$$$$$$$ Error sending Sending single event $$$$$$$$ : {str(ex)}")
+                print(f"Error while sending event to moesif: {str(ex)}")
+        else:
+            print(" %%%%%%$$$$$$$$ Still sending in the batch %%%%%%%$$$$$$$$-- ")
+            try:
+                # Add Event to the queue if able and count the dropped event if at capacity
+                if self.worker_pool.add_event(event_data):
+                    print("Add Event to the queue")
+                    if self.DEBUG:
+                        print(f"Event added to the queue: {APIHelper.json_serialize(event_data)}")
+                else:
+                    self.dropped_events += 1
+                    print(f"Dropped Event due to queue capacity drop_count: {str(self.dropped_events)}")
+                    if self.DEBUG:
+                        print(f"Event dropped: {APIHelper.json_serialize(event_data)}")
+            # add_event does not throw exceptions so this is unexepected
+            except Exception as ex:
+                print(f"Error while adding event to the queue: {str(ex)}")
+
+            # Check if scheduler job is running, if not running, scheduled a new job
+            if not self.is_config_job_scheduled:
+                self.schedule_config_job()
 
 
     def process_data(self, data, blocked_by):

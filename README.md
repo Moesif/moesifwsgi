@@ -45,9 +45,9 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 ```
 
 Your Moesif Application Id can be found in the [_Moesif Portal_](https://www.moesif.com/).
-After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps. 
+After signing up for a Moesif account, your Moesif Application Id will be displayed during the onboarding steps.
 
-You can always find your Moesif Application Id at any time by logging 
+You can always find your Moesif Application Id at any time by logging
 into the [_Moesif Portal_](https://www.moesif.com/), click on the top right menu,
 and then clicking _API Keys_.
 
@@ -110,7 +110,7 @@ Please read the documentation for your specific framework on how to add middlewa
 The app is the original WSGI app instance, and the environ is a [WSGI environ](http://wsgi.readthedocs.io/en/latest/definitions.html).
 Also, Moesif adds the following to the environ variable
 ```
-environ['moesif.request_body'] - A json object or base64 encoded string if couldn't parse the request body as json 
+environ['moesif.request_body'] - A json object or base64 encoded string if couldn't parse the request body as json
 environ["moesif.response_body_chunks"] - A response body chunks
 environ["moesif.response_headers"] - A dict representing the response headers
 ```
@@ -156,7 +156,7 @@ to associate this event with custom metadata. For example, you may want to save 
 (optional) __int__, default 100, Maximum batch size when sending events to Moesif when reading from the queue
 
 #### __`EVENT_BATCH_TIMEOUT`__
-(optional) __int__, default 2, Maximum time in seconds to wait before sending a batch of events to Moesif when reading from the queue
+(optional) __int__, default 1, Maximum time in seconds to wait before sending a batch of events to Moesif when reading from the queue
 
 #### __`AUTHORIZATION_HEADER_NAME`__
 (optional) _string_, A request header field name used to identify the User in Moesif. Default value is `authorization`. Also, supports a comma separated string. We will check headers in order like `"X-Api-Key,Authorization"`.
@@ -167,7 +167,7 @@ to associate this event with custom metadata. For example, you may want to save 
 #### __`BASE_URI`__
 (optional) _string_, A local proxy hostname when sending traffic via secure proxy. Please set this field when using secure proxy. For more details, refer [secure proxy documentation.](https://www.moesif.com/docs/platform/secure-proxy/#2-configure-moesif-sdk)
 
-### Options specific to outgoing API calls 
+### Options specific to outgoing API calls
 
 The options below are applicable to outgoing API calls (calls you initiate using the Python [Requests](http://docs.python-requests.org/en/master/) lib to third parties like Stripe or to your own services.
 
@@ -176,11 +176,11 @@ For options that use the request and response as input arguments, these use the 
 If you are not using WSGI, you can import the [moesifpythonrequest](https://github.com/Moesif/moesifpythonrequest) directly.
 
 #### __`CAPTURE_OUTGOING_REQUESTS`__
-_boolean_, Default False. Set to True to capture all outgoing API calls. False will disable this functionality. 
+_boolean_, Default False. Set to True to capture all outgoing API calls. False will disable this functionality.
 
 ##### __`GET_METADATA_OUTGOING`__
-(optional) _(req, res) => dictionary_, a function that enables you to return custom metadata associated with the logged API calls. 
-Takes in the [Requests](http://docs.python-requests.org/en/master/api/) request and response object as arguments. You should implement a function that 
+(optional) _(req, res) => dictionary_, a function that enables you to return custom metadata associated with the logged API calls.
+Takes in the [Requests](http://docs.python-requests.org/en/master/api/) request and response object as arguments. You should implement a function that
 returns a dictionary containing your custom metadata. (must be able to be encoded into JSON). For example, you may want to save a VM instance_id, a trace_id, or a resource_id with the request.
 
 ##### __`SKIP_OUTGOING`__
@@ -269,7 +269,7 @@ user = {
   'company_id': '67890', # If set, associate user with a company object
   'campaign': {
     'utm_source': 'google',
-    'utm_medium': 'cpc', 
+    'utm_medium': 'cpc',
     'utm_campaign': 'adwords',
     'utm_term': 'api+tooling',
     'utm_content': 'landing'
@@ -291,7 +291,7 @@ update_user = api_client.update_user(user)
 ```
 
 ### Update Users in Batch
-Similar to update_user, but used to update a list of users in one batch. 
+Similar to update_user, but used to update a list of users in one batch.
 Only the `user_id` field is required.
 For details, visit the [Python API Reference](https://www.moesif.com/docs/api?python#update-users-in-batch).
 
@@ -349,10 +349,10 @@ api_client = MoesifAPIClient("Your Moesif Application Id").api
 # metadata can be any custom object
 company = {
   'company_id': '67890',
-  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'campaign': {
     'utm_source': 'google',
-    'utm_medium': 'cpc', 
+    'utm_medium': 'cpc',
     'utm_campaign': 'adwords',
     'utm_term': 'api+tooling',
     'utm_content': 'landing'
@@ -373,7 +373,7 @@ update_company = api_client.update_company(company)
 ```
 
 ### Update Companies in Batch
-Similar to update_company, but used to update a list of companies in one batch. 
+Similar to update_company, but used to update a list of companies in one batch.
 Only the `company_id` field is required.
 For details, visit the [Python API Reference](https://www.moesif.com/docs/api?python#update-companies-in-batch).
 
@@ -382,7 +382,7 @@ api_client = MoesifAPIClient("Your Moesif Application Id").api
 
 companyA = {
   'company_id': '67890',
-  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'metadata': {
     'org_name': 'Acme, Inc',
     'plan_name': 'Free',
@@ -397,7 +397,7 @@ companyA = {
 
 companyB = {
   'company_id': '09876',
-  'company_domain': 'contoso.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'contoso.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'metadata': {
     'org_name': 'Contoso, Inc',
     'plan_name': 'Free',
@@ -414,7 +414,7 @@ update_companies = api_client.update_companies_batch([companyA, companyB])
 ```
 ## Troubleshooting
 
-When using Docker with Ubuntu based image, if events are not being captured, it could be possible as the image can't find any timezone configuration. 
+When using Docker with Ubuntu based image, if events are not being captured, it could be possible as the image can't find any timezone configuration.
 In order to resolve that, add the following line to your Dockerfile
 ```
 ENV TZ=UTC

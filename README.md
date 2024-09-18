@@ -6,14 +6,14 @@
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-With Moesif middleware for Python ASGI-based frameworks, you can automatically log API calls 
+With Moesif middleware for Python WSGI-based frameworks, you can automatically log API calls 
 and send them to [Moesif](https://www.moesif.com) for API analytics and monitoring.
 
 > If you're new to Moesif, see [our Getting Started](https://www.moesif.com/docs/) resources to quickly get up and running.
 
 ## Overview
 This middleware allows you to integrate Moesif's API analytics and 
-API monetization features with minimal configuration into APIs that are built on Python ASGI-based (Asynchronous Server Gateway Interface) frameworks.
+API monetization features with minimal configuration into APIs that are built on Python WSGI-based (Web Server Gateway Interface) frameworks.
 
 [WSGI (Web Server Gateway Interface)](https://wsgi.readthedocs.io/en/latest/)
 is a standard (PEP 3333) that describes

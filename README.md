@@ -545,7 +545,7 @@ An optional field name that specifies the maximum batch size when sending to Moe
     <code>int</code>
    </td>
    <td>
-    <code>2</code>
+    <code>1</code>
    </td>
   </tr>
 </table>

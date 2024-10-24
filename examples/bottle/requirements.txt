@@ -1,2 +1,2 @@
-moesifwsgi==1.9.4
+moesifwsgi>=1.9.6
 bottle

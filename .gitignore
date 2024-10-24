@@ -202,3 +202,5 @@ fabric.properties
 # modules.xml
 # .idea/misc.xml
 # *.ipr
+**/Pipfile
+**/Pipfile.lock

@@ -7,18 +7,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_field_value_for_path(path, request_fields={}, request_body={}):
+def get_field_value_for_path(path, request_fields={}, request_body={}, request_headers={}):
   if path and path.startswith('request.body.') and request_body and isinstance(request_body, dict):
     return request_body.get(path.replace('request.body.', ''), None)
+  elif path and path.startswith('request.headers.') and request_headers and isinstance(request_headers, dict):
+    return request_headers.get(path.replace('request.headers.', ''), None)
   return request_fields.get(path, None)
 
-def does_regex_config_match(regex_config, request_fields, request_body):
+def does_regex_config_match(regex_config, request_fields, request_body, request_headers):
   if not regex_config:
     return True
 
   def does_one_condition_match(condition):
     path = condition['path']
-    field_value = get_field_value_for_path(path, request_fields, request_body)
+    field_value = get_field_value_for_path(path, request_fields, request_body, request_headers)
     regex_pattern = condition['value']
     if field_value:
       return re.search(regex_pattern, field_value)
@@ -171,25 +173,25 @@ class GovernanceRulesManager:
   def has_rules(self):
     return self.rules and len(self.rules) > 0
 
-  def get_applicable_regex_rules(self, request_fields, request_body):
+  def get_applicable_regex_rules(self, request_fields, request_body, request_headers):
     if self.regex_rules:
-      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.regex_rules)
+      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body, request_headers), self.regex_rules)
     else:
       return []
 
-  def get_applicable_unidentified_user_rules(self, request_fields, request_body):
+  def get_applicable_unidentified_user_rules(self, request_fields, request_body, request_headers):
     if self.unidentified_user_rules:
-      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.unidentified_user_rules)
+      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body, request_headers), self.unidentified_user_rules)
     else:
       return []
 
-  def get_applicable_unidentified_company_rules(self, request_fields, request_body):
+  def get_applicable_unidentified_company_rules(self, request_fields, request_body, request_headers):
     if self.unidentified_company_rules:
-      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body), self.unidentified_company_rules)
+      return filter(lambda rule: does_regex_config_match(rule['regex_config'], request_fields, request_body, request_headers), self.unidentified_company_rules)
     else:
       return []
 
-  def get_user_rules(self, config_rules_values, request_fields, request_body):
+  def get_user_rules(self, config_rules_values, request_fields, request_body, request_headers):
     applicable_rules = []
     in_cohort_of_rule_hash = {}
 
@@ -205,7 +207,7 @@ class GovernanceRulesManager:
           # print an debug log here.
           break
 
-        regex_matched = does_regex_config_match(found_rule['regex_config'], request_fields, request_body)
+        regex_matched = does_regex_config_match(found_rule['regex_config'], request_fields, request_body, request_headers)
 
         if not regex_matched:
           break
@@ -221,14 +223,14 @@ class GovernanceRulesManager:
     for rule in self.user_rules.items():
       rule_info = rule[1]
       if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash.get(rule_info['_id'], None):
-        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
+        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body, request_headers)
         if regex_matched:
           applicable_rules.append(rule_info)
 
     return applicable_rules
 
 
-  def get_company_rules(self, config_rules_values, request_fields, request_body):
+  def get_company_rules(self, config_rules_values, request_fields, request_body, request_headers):
     applicable_rules = []
     in_cohort_of_rule_hash = {}
 
@@ -243,7 +245,7 @@ class GovernanceRulesManager:
           # print an debug log here.
           break
 
-        regex_matched = does_regex_config_match(found_rule['regex_config'], request_fields, request_body)
+        regex_matched = does_regex_config_match(found_rule['regex_config'], request_fields, request_body, request_headers)
 
         if not regex_matched:
           break
@@ -259,13 +261,13 @@ class GovernanceRulesManager:
     for rule in self.company_rules.items():
       rule_info = rule[1]
       if rule_info['applied_to'] == 'not_matching' and not in_cohort_of_rule_hash.get(rule_info['_id'], None):
-        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body)
+        regex_matched = does_regex_config_match(rule_info['regex_config'], request_fields, request_body, request_headers)
         if regex_matched:
           applicable_rules.append(rule_info)
 
     return applicable_rules
 
-  def govern_request(self, config, event_info, user_id, company_id, request_body):
+  def govern_request(self, config, event_info, user_id, company_id, request_body, request_headers):
 
     request_fields = prepare_request_fields(event_info, request_body)
 
@@ -277,36 +279,27 @@ class GovernanceRulesManager:
       'body': None
     }
 
-    applicable_regex_rules = self.get_applicable_regex_rules(request_fields, request_body)
+    applicable_regex_rules = self.get_applicable_regex_rules(request_fields, request_body, request_headers)
 
     response_holder = apply_rules(applicable_regex_rules, response_holder, None)
 
     if company_id is None:
-      unidentified_company_rules = self.get_applicable_unidentified_company_rules(request_fields, request_body)
+      unidentified_company_rules = self.get_applicable_unidentified_company_rules(request_fields, request_body, request_headers)
       response_holder = apply_rules(unidentified_company_rules, response_holder, None)
     else:
       config_rules_values = config_json.get('company_rules', {}).get(company_id)
-      company_rules = self.get_company_rules(config_rules_values, request_fields, request_body)
+      company_rules = self.get_company_rules(config_rules_values, request_fields, request_body, request_headers)
       response_holder = apply_rules(company_rules, response_holder, config_rules_values)
 
     if user_id is None:
-      unidentified_user_rules = self.get_applicable_unidentified_user_rules(request_fields, request_body)
+      unidentified_user_rules = self.get_applicable_unidentified_user_rules(request_fields, request_body, request_headers)
       response_holder = apply_rules(unidentified_user_rules, response_holder, None)
     else:
       config_rules_values = config_json.get('user_rules', {}).get(user_id)
-      user_rules = self.get_user_rules(config_rules_values, request_fields, request_body)
+      user_rules = self.get_user_rules(config_rules_values, request_fields, request_body, request_headers)
       response_holder = apply_rules(user_rules, response_holder, config_rules_values)
 
     if 'blocked_by' in response_holder:
       response_holder['body'] = format_body_for_middleware(response_holder['body'])
 
     return response_holder
-
-
-
-
-
-
-
-
-

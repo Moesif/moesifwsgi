@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_field_value_for_path(path, request_fields={}, request_body={}, request_headers={}):
+  # Transforming the headers to be case insensitive to ensure regex matches on headers across all frameworks
+  request_headers = {k.lower(): v for k, v in request_headers.items()}
   if path and path.startswith('request.body.') and request_body and isinstance(request_body, dict):
     return request_body.get(path.replace('request.body.', ''), None)
   elif path and path.startswith('request.headers.') and request_headers and isinstance(request_headers, dict):
-    return request_headers.get(path.replace('request.headers.', ''), None)
+    return request_headers.get(path.replace('request.headers.', '').lower(), None)
   return request_fields.get(path, None)
 
 def does_regex_config_match(regex_config, request_fields, request_body, request_headers):

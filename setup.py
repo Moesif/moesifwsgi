@@ -90,8 +90,8 @@ setup(
     install_requires=[
         'requests>=2.30.0',
         'isodatetimehandler>=1.0.2',
-        'moesifapi>=1.5.0',
-        'moesifpythonrequest>=0.3.1',
+        'moesifapi>=1.5.3',
+        'moesifpythonrequest>=0.3.4',
         'readerwriterlock>=1.0.9',
         'apscheduler>=3.10.4'
     ],

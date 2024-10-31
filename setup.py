@@ -94,7 +94,6 @@ setup(
         'moesifpythonrequest>=0.3.4',
         'readerwriterlock>=1.0.9',
         'apscheduler>=3.10.4'
-        'ipaddress;python_version<"3.3"',
     ],
 
     # List additional groups of dependencies here (e.g. development

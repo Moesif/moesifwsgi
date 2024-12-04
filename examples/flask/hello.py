@@ -45,6 +45,7 @@ moesif_settings = {
     'GET_METADATA': get_metadata,
     'CAPTURE_OUTGOING_REQUESTS': False,
 }
+
 app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 @app.route('/')
@@ -53,7 +54,12 @@ def index():
 
 @app.route('/hello')
 def hello():
-    return 'Hello, world'
+      # Create a response object
+    response = Response('Hello, world')
+
+    # Attach a function to call_on_close
+    response.call_on_close(lambda: print("Response has been sent to the client."))
+    return response;
 
 @app.route('/user/<username>')
 def show_user_profile(username):
@@ -80,10 +86,16 @@ tasks = [
     }
 ]
 
+@app.route('/error', methods=['GET'])
+def error():
+    raise ValueError("This is a test error!")
+
 @app.route('/todo/api/v1.0/tasks', methods=['GET'])
 def get_tasks():
     json_body = json.dumps({'tasks': tasks})
-    return Response(response=json_body, status=201, mimetype='application/json')
+    response = Response(response=json_body, status=201, mimetype='application/json')
+    response.call_on_close(lambda: print("Response has been sent to the client."));
+    return response
 
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['GET'])

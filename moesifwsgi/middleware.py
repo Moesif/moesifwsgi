@@ -104,7 +104,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.9.7"
+        Configuration.version = "moesifwsgi-python/1.9.8"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             StartCapture().start_capture_outgoing(self.settings)
 
@@ -172,7 +172,8 @@ class MoesifMiddleware(object):
           blocked_by = governed_response['blocked_by']
         else:
           # trigger next step in the process
-          response_chunks = event_info.finish_response(self.app(environ, _start_response))
+          original_response = self.app(environ, _start_response);
+          response_chunks = event_info.finish_response(original_response)
 
         # Add response chunks and response headers to the environ
         environ["moesif.response_body_chunks"] = response_chunks
@@ -186,9 +187,28 @@ class MoesifMiddleware(object):
         self.add_user_and_metadata(event_info, environ, response_headers_mapping)
 
         try:
-            return response_chunks
+            return self.wrap_response(response_chunks, original_response)
         finally:
             self.process_and_add_event_if_required(event_info, environ, response_headers_mapping, blocked_by)
+
+    def wrap_response(self, response_chunks, original_response):
+        class WrappedResponse:
+            def __init__(self, chunks, original):
+                self.chunks = chunks
+                self.original = original
+
+            def __iter__(self):
+                return iter(self.chunks)
+
+            def close(self):
+                if hasattr(self.original, 'close'):
+                    self.original.close()
+
+            def __getattr__(self, name):
+                # Delegate attribute access to the original response
+                return getattr(self.original, name)
+
+        return WrappedResponse(response_chunks, original_response)
 
     def prepare_event_info(self, environ, start_response, request_time):
         event_info = DataHolder(

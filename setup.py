@@ -28,7 +28,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.9.7',
+    version='1.9.8',
 
     description='Moesif Middleware for Python WSGI based platforms (Flask, Bottle & Others)',
     long_description=long_description,
@@ -39,7 +39,7 @@ setup(
 
     # Author details
     author='Moesif, Inc',
-    author_email='xing@moesif.com',
+    author_email='team@moesif.com',
 
     license='Apache Software License',
 

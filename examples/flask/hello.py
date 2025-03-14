@@ -2,6 +2,8 @@ from moesifwsgi import MoesifMiddleware
 from flask import Flask, jsonify, abort, make_response, request, Response
 import gzip
 import json
+import random
+
 
 app = Flask(__name__)
 
@@ -34,12 +36,12 @@ def mask_event(eventmodel):
     return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'Your Moesif Application Id',
+    'APPLICATION_ID': 'eyJhcHAiOiI0ODc6MjA2IiwidmVyIjoiMi4xIiwib3JnIjoiODg6MjEwIiwiaWF0IjoxNzQwNzg3MjAwfQ.Iy-gD6-ZUsiiltc972p9bulsxsS5gHyS0rCLVUR7YA4',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,
     'SKIP': should_skip,
-    'DEBUG': False,
+    'DEBUG': True,
     'MASK_EVENT_MODEL': mask_event,
     'GET_SESSION_TOKEN': get_token,
     'GET_METADATA': get_metadata,
@@ -92,7 +94,17 @@ def error():
 
 @app.route('/todo/api/v1.0/tasks', methods=['GET'])
 def get_tasks():
-    json_body = json.dumps({'tasks': tasks})
+    n = request.args.get('n', default=100, type=int)
+    generated_tasks = [
+        {
+            'id': i,
+            'title': f'Task {i}',
+            'description': f'Description for task {i}',
+            'done': random.choice([True, False])
+        }
+        for i in range(1, n + 1)
+    ]
+    json_body = json.dumps({'tasks': generated_tasks})
     response = Response(response=json_body, status=201, mimetype='application/json')
     response.call_on_close(lambda: print("Response has been sent to the client."));
     return response

@@ -7,13 +7,13 @@ by [Moesif](https://moesif.com), the [API analytics](https://www.moesif.com/feat
 [![Software License][ico-license]][link-license]
 [![Source Code][ico-source]][link-source]
 
-With Moesif middleware for Python WSGI-based frameworks, you can automatically log API calls 
+With Moesif middleware for Python WSGI-based frameworks, you can automatically log API calls
 and send them to [Moesif](https://www.moesif.com) for API analytics and monitoring.
 
 > If you're new to Moesif, see [our Getting Started](https://www.moesif.com/docs/) resources to quickly get up and running.
 
 ## Overview
-This middleware allows you to integrate Moesif's API analytics and 
+This middleware allows you to integrate Moesif's API analytics and
 API monetization features with minimal configuration into APIs that are built on Python WSGI-based (Web Server Gateway Interface) frameworks.
 
 [WSGI (Web Server Gateway Interface)](https://wsgi.readthedocs.io/en/latest/)
@@ -154,6 +154,12 @@ Other troubleshooting supports:
 - [FAQ](https://www.moesif.com/docs/faq/)
 - [Moesif support email](mailto:support@moesif.com)
 
+### Thread Pool Issues
+
+This library manages a thread pool to send data to Moesif in the background without impacting your app's latency.
+
+However, the `preload` feature of Gunicorn (or `preload-app` for Hypercorn) may interfere with the thread pool before the worker is forked. If you encounter issues, avoid setting `preload` to `True`.
+
 ### Solve Timezone Issue with Docker
 When using Docker with Ubuntu-based image, events may not be captured if the image fails to find any timezone configuration. To solve this issue, add the following line to your Dockerfile:
 
@@ -185,11 +191,11 @@ The following sections describe the available configuration options for this mid
 Notice the following about the configuration options:
 
 - The `app` is the original WSGI app instance.
-- The `environ` is a [WSGI `environ`](http://wsgi.readthedocs.io/en/latest/definitions.html). 
+- The `environ` is a [WSGI `environ`](http://wsgi.readthedocs.io/en/latest/definitions.html).
 
 Moesif also adds the following keys to `environ`:
 
-- __`environ['moesif.request_body']`__: a JSON object or base64 encoded string if couldn't parse the request body as JSON 
+- __`environ['moesif.request_body']`__: a JSON object or base64 encoded string if couldn't parse the request body as JSON
 
 - __`environ["moesif.response_body_chunks"]`__: a response body chunks
 
@@ -273,10 +279,10 @@ Optional, but highly recommended.
 A function with the following arguments:
 
 - A WSGI application
-- An `environ` object 
+- An `environ` object
 - An optional parameter for response headers
 
-Returns returns a string that represents the user ID used by your system. 
+Returns returns a string that represents the user ID used by your system.
 
 Moesif identifies users automatically. However, due to the differences arising from different frameworks and implementations, provide this function to ensure user identification properly.
 
@@ -306,12 +312,12 @@ Moesif identifies users automatically. However, due to the differences arising f
   </tr>
 </table>
 
-Optional. 
+Optional.
 
 A function with the following arguments:
 
 - A WSGI application
-- An `environ` object 
+- An `environ` object
 - An optional parameter for response headers
 
 Returns a string that represents the company ID for this event.
@@ -348,7 +354,7 @@ A function that takes a WSGI application and an `environ` object, and
 returns a dictionary.
 
 This function allows you
-to add custom metadata that Moesif can associate with the event. The metadata must be a simple Python dictionary that can be converted to JSON. 
+to add custom metadata that Moesif can associate with the event. The metadata must be a simple Python dictionary that can be converted to JSON.
 
 For example, you may want to save a virtual machine instance ID, a trace ID, or a resource ID with the request.
 
@@ -381,7 +387,7 @@ For example, you may want to save a virtual machine instance ID, a trace ID, or 
 
 Optional.
 
-A function that takes a WSGI application and an `environ`, and returns a string that represents the session token for this event. 
+A function that takes a WSGI application and an `environ`, and returns a string that represents the session token for this event.
 
 Similar to users and companies, Moesif tries to retrieve session tokens automatically. But if it doesn't work for your service, provide this function to help identify sessions.
 
@@ -413,7 +419,7 @@ Similar to users and companies, Moesif tries to retrieve session tokens automati
 
 Optional.
 
-A function that takes the final Moesif event model and returns an event model with desired data removed. 
+A function that takes the final Moesif event model and returns an event model with desired data removed.
 
 The return value must be a valid eventt model required by Moesif data ingestion API. For more information about the `EventModel` object, see the [Moesif Python API documentation](https://www.moesif.com/docs/api?python).
 
@@ -505,7 +511,7 @@ The maximum number of event objects queued in memory pending upload to Moesif. F
 
 Optional.
 
-The number of worker threads to use for uploading events to Moesif. 
+The number of worker threads to use for uploading events to Moesif.
 
 If you have a large number of events being logged, increasing this number can improve upload performance.
 
@@ -562,7 +568,7 @@ Maximum time in seconds to wait before sending a batch of events to Moesif when 
     Data type
    </th>
    <th scope="col">
-    Default 
+    Default
    </th>
   </tr>
   <tr>
@@ -586,7 +592,7 @@ A request header field name used to identify the User in Moesif. It also support
     Data type
    </th>
    <th scope="col">
-    Default 
+    Default
    </th>
   </tr>
   <tr>
@@ -621,7 +627,7 @@ Optional.
 
 A local proxy hostname when sending traffic through secure proxy. Remember to set this field when using secure proxy. For more information, see [Secure Proxy documentation.](https://www.moesif.com/docs/platform/secure-proxy/#2-configure-moesif-sdk).
 
-### Options For Outgoing API Calls 
+### Options For Outgoing API Calls
 
 The following options apply to outgoing API calls. These are calls you initiate using the Python [Requests](http://docs.python-requests.org/en/master/) library to third parties like Stripe or to your own services.
 
@@ -636,7 +642,7 @@ If you are not using WSGI, you can import [`moesifpythonrequest`](https://github
     Data type
    </th>
    <th scope="col">
-    Default 
+    Default
    </th>
   </tr>
   <tr>
@@ -681,7 +687,7 @@ Optional.
 
 A function that enables you to return custom metadata associated with the logged API calls.
 
-Takes in the [Requests](http://docs.python-requests.org/en/master/api/) request and response objects as arguments. 
+Takes in the [Requests](http://docs.python-requests.org/en/master/api/) request and response objects as arguments.
 
 We recommend that you implement a function that
 returns a dictionary containing your custom metadata. The dictionary must be a valid one that can be encoded into JSON. For example, you may want to save a virtual machine instance ID, a trace ID, or a resource ID with the request.
@@ -745,9 +751,9 @@ and returns `True` if you want to skip this particular event.
 
 Optional, but highly recommended.
 
-A function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response objects, and returns a string that represents the user ID used by your system. 
+A function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response objects, and returns a string that represents the user ID used by your system.
 
-While Moesif tries to identify users automatically, different frameworks and your implementation might vary. So we highly recommend that you accurately provide a 
+While Moesif tries to identify users automatically, different frameworks and your implementation might vary. So we highly recommend that you accurately provide a
 user ID using this function.
 
 #### `IDENTIFY_COMPANY_OUTGOING`
@@ -808,7 +814,7 @@ A function that takes [Requests](http://docs.python-requests.org/en/master/api/)
 
 Optional.
 
-A function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response objects, and returns a string that corresponds to the session token for this event. 
+A function that takes [Requests](http://docs.python-requests.org/en/master/api/) request and response objects, and returns a string that corresponds to the session token for this event.
 
 Similar to [user IDs](#identify_user_outgoing), Moesif tries to get the session token automatically. However, if you setup differs from the standard, this function can help tying up events together and help you replay the events.
 
@@ -890,7 +896,7 @@ app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
 
 The following examples demonstrate how to add and update customer information.
 
-### Update A Single User 
+### Update A Single User
 To create or update a [user](https://www.moesif.com/docs/getting-started/users/) profile in Moesif, use the `update_user()` function.
 
 ```python
@@ -905,7 +911,7 @@ user = {
   'company_id': '67890', # If set, associate user with a company object
   'campaign': {
     'utm_source': 'google',
-    'utm_medium': 'cpc', 
+    'utm_medium': 'cpc',
     'utm_campaign': 'adwords',
     'utm_term': 'api+tooling',
     'utm_content': 'landing'
@@ -987,10 +993,10 @@ api_client = MoesifAPIClient("Your Moesif Application Id").api
 # metadata can be any custom object
 company = {
   'company_id': '67890',
-  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'campaign': {
     'utm_source': 'google',
-    'utm_medium': 'cpc', 
+    'utm_medium': 'cpc',
     'utm_campaign': 'adwords',
     'utm_term': 'api+tooling',
     'utm_content': 'landing'
@@ -1021,7 +1027,7 @@ api_client = MoesifAPIClient("Your Moesif Application Id").api
 
 companyA = {
   'company_id': '67890',
-  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'acmeinc.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'metadata': {
     'org_name': 'Acme, Inc',
     'plan_name': 'Free',
@@ -1036,7 +1042,7 @@ companyA = {
 
 companyB = {
   'company_id': '09876',
-  'company_domain': 'contoso.com', # If domain is set, Moesif will enrich your profiles with publicly available info 
+  'company_domain': 'contoso.com', # If domain is set, Moesif will enrich your profiles with publicly available info
   'metadata': {
     'org_name': 'Contoso, Inc',
     'plan_name': 'Free',
@@ -1054,7 +1060,7 @@ update_companies = api_client.update_companies_batch([companyA, companyB])
 The `metadata` field can contain any company demographic or other information you want to store. Moesif only requires the `company_id` field. For more information, see the function documentation in [Moesif Python API Reference](https://www.moesif.com/docs/api?python#update-companies-in-batch).
 
 ## How to Get Help
-If you face any issues using this middleware, try the [troubheshooting guidelines](#troubleshoot). For further assistance, reach out to our [support team](mailto:support@moesif.com).
+If you face any issues using this middleware, try the [troubleshooting guidelines](#troubleshoot). For further assistance, reach out to our [support team](mailto:support@moesif.com).
 
 ## Explore Other Integrations
 

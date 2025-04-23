@@ -10,6 +10,7 @@ class DataHolder(object):
         self.method = method
         self.verb = method
         self.url = url
+        self.uri = url
         self.ip_address = ip
         self.user_id = None
         self.company_id = None

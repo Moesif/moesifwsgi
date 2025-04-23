@@ -5,8 +5,8 @@ import random
 from datetime import datetime
 import sys
 
-from moesifwsgi.config_manager import ConfigUpdateManager
-from moesifwsgi.workers import BatchedWorkerPool, ConfigJobScheduler
+from moesifapi.config_manager import ConfigUpdateManager
+from moesifapi.workers import ConfigJobScheduler
 
 try:
     from cStringIO import StringIO
@@ -25,9 +25,9 @@ from .event_mapper import EventMapper
 from .http_response_catcher import HttpResponseCatcher
 from .logger_helper import LoggerHelper
 from .moesif_data_holder import DataHolder
-from .parse_body import ParseBody
-from .update_companies import Company
-from .update_users import User
+from moesifapi.parse_body import ParseBody
+from moesifapi.update_companies import Company
+from moesifapi.update_users import User
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.9.8"
+        Configuration.version = "moesifwsgi-python/1.10.1"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             StartCapture().start_capture_outgoing(self.settings)
 

@@ -104,7 +104,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.9.8"
+        Configuration.version = "moesifwsgi-python/1.10.1"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             StartCapture().start_capture_outgoing(self.settings)
 

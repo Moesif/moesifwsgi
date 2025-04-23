@@ -246,11 +246,12 @@ class MoesifMiddleware(object):
         )
 
         # if the event has a sample rate of less than 100, then we need to check if this event should be skipped and not sent to Moesif
-        random_percentage = random.random() * 100
-        if random_percentage >= event_sampling_percentage:
-            logger.debug(f"Skipped Event due to sampling percentage: {str(event_sampling_percentage)}"
-                         f" and random percentage: {str(random_percentage)}")
-            return
+        if event_sampling_percentage != 100:
+            random_percentage = random.random() * 100
+            if random_percentage >= event_sampling_percentage:
+                logger.debug(f"Skipped Event due to sampling percentage: {event_sampling_percentage} "
+                             f"and random percentage: {random_percentage}")
+                return
 
         # Add proportionate weight to the event for sampling percentage lower than 100
         event_data.weight = 1 if event_sampling_percentage == 0 else math.floor(100 / event_sampling_percentage)

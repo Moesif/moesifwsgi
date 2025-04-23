@@ -6,7 +6,7 @@ from datetime import datetime
 import sys
 
 from moesifapi.config_manager import ConfigUpdateManager
-from moesifapi.workers import ConfigJobScheduler
+from moesifapi.workers import BatchedWorkerPool, ConfigJobScheduler
 
 try:
     from cStringIO import StringIO

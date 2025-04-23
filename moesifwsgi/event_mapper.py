@@ -1,7 +1,7 @@
 import logging
 
 from moesifapi.models import *
-from .parse_body import ParseBody
+from moesifapi.parse_body import ParseBody
 from .logger_helper import LoggerHelper
 import logging
 

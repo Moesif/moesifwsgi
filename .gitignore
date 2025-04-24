@@ -204,3 +204,4 @@ fabric.properties
 # *.ipr
 **/Pipfile
 **/Pipfile.lock
+*.pid

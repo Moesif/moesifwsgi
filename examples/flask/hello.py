@@ -36,7 +36,7 @@ def mask_event(eventmodel):
     return eventmodel
 
 moesif_settings = {
-    'APPLICATION_ID': 'eyJhcHAiOiI0ODc6MjA2IiwidmVyIjoiMi4xIiwib3JnIjoiODg6MjEwIiwiaWF0IjoxNzQwNzg3MjAwfQ.Iy-gD6-ZUsiiltc972p9bulsxsS5gHyS0rCLVUR7YA4',
+    'APPLICATION_ID': 'Your Moesif Application Id',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,

@@ -6,13 +6,13 @@ app = Flask(__name__)
 
 # Moesif Middleware options
 def identify_user(app, environ, response_headers=dict()):
-  return environ.get('HTTP_X_USER_ID', '12345')  # Default to '12345' if header is not present
+  return environ.get('HTTP_X_USER_ID')
 
 def identify_company(app, environ, response_headers=dict()):
-  return environ.get('HTTP_X_COMPANY_ID', '67890')  # Default to '67890' if header is not present
+  return environ.get('HTTP_X_COMPANY_ID')
 
 moesif_settings = {
-    'APPLICATION_ID': 'eyJhcHAiOiI0OTM6MTg3NSIsInZlciI6IjIuMSIsIm9yZyI6Ijg4OjIxMCIsImlhdCI6MTc0MzQ2NTYwMH0.dzwkeeBSCbrM1wizJC86iT953vEC0ZhCM3EJzjOpO3Q',
+    'APPLICATION_ID': 'Your Moesif Application Id',
     'IDENTIFY_USER': identify_user,
     'IDENTIFY_COMPANY': identify_company,
     'LOG_BODY': True,

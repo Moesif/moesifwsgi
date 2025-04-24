@@ -4,7 +4,7 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
-from .parse_body import ParseBody
+from moesifapi.parse_body import ParseBody
 from io import BytesIO
 import json
 import base64

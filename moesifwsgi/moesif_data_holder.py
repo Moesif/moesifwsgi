@@ -8,7 +8,9 @@ class DataHolder(object):
     def __init__(self, disable_capture_transaction_id, id, method, url, ip, request_headers, content_length, request_body, transfer_encoding, request_time):
         self.request_id = id
         self.method = method
+        self.verb = method
         self.url = url
+        self.uri = url
         self.ip_address = ip
         self.user_id = None
         self.company_id = None

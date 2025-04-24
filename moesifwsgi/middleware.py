@@ -164,6 +164,9 @@ class MoesifMiddleware(object):
             return start_response(status, final_headers, *args)
 
         blocked_by = None
+        original_response = None
+        response_chunks = None
+
         if 'blocked_by' in governed_response:
           # start response immediately, skip next step
           headers_as_tuple_list = [(k, v) for k, v in governed_response['headers'].items()]

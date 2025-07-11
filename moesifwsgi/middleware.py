@@ -17,7 +17,7 @@ import atexit
 import logging
 
 from moesifapi.moesif_api_client import *
-from moesifpythonrequest.app_config.app_config import AppConfig
+from moesifapi.app_config.app_config import AppConfig
 from moesifpythonrequest.start_capture.start_capture import StartCapture
 from moesifapi.api_helper import *
 from .client_ip import ClientIp
@@ -104,7 +104,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.10.3"
+        Configuration.version = "moesifwsgi-python/1.10.4"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             StartCapture().start_capture_outgoing(self.settings)
 

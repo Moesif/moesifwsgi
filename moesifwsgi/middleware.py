@@ -57,8 +57,8 @@ class MoesifMiddleware(object):
         self.initialize_config()
         self.initialize_worker_pool()
 
-        # graceful shutodown handlers
-        atexit.register(self.worker_pool.stop)
+        # graceful shutdown handlers
+        atexit.register(self._shutdown)
 
     def initialize_logger(self):
         """Initialize logger mirroring the debug and stdout behavior of previous print statements for compatibility"""
@@ -67,6 +67,21 @@ class MoesifMiddleware(object):
             format='%(asctime)s\t%(levelname)s\tPID: %(process)d\tThread: %(thread)d\t%(funcName)s\t%(message)s',
             handlers=[logging.StreamHandler()]
         )
+
+    def _shutdown(self):
+        """Graceful shutdown: stop scheduler first, then worker pool."""
+        try:
+            if getattr(self, 'config_job_scheduler', None):
+                self.config_job_scheduler.exit_config_job()
+        except Exception as ex:
+            if self.DEBUG:
+                logger.info(f'Error shutting down config scheduler: {str(ex)}')
+        try:
+            if getattr(self, 'worker_pool', None):
+                self.worker_pool.stop()
+        except Exception as ex:
+            if self.DEBUG:
+                logger.info(f'Error shutting down worker pool: {str(ex)}')
 
     def validate_settings(self):
         if self.settings is None or not self.settings.get("APPLICATION_ID", None):
@@ -91,9 +106,11 @@ class MoesifMiddleware(object):
     # Schedule background job to fetch the app configuration periodically (every 60second)
     def schedule_config_job(self):
         try:
-            ConfigJobScheduler(self.DEBUG, self.config).schedule_background_job()
+            self.config_job_scheduler = ConfigJobScheduler(self.DEBUG, self.config)
+            self.config_job_scheduler.schedule_background_job()
             self.is_config_job_scheduled = True
         except Exception as ex:
+            self.config_job_scheduler = None
             self.is_config_job_scheduled = False
             if self.DEBUG:
                 logger.info(f'Error while starting the config scheduler job in background: {str(ex)}')
@@ -104,7 +121,7 @@ class MoesifMiddleware(object):
             response_catcher = HttpResponseCatcher(self.DEBUG)
             self.api_client.http_call_back = response_catcher
         Configuration.BASE_URI = self.settings.get("BASE_URI") or self.settings.get("LOCAL_MOESIF_BASEURL", "https://api.moesif.net")
-        Configuration.version = "moesifwsgi-python/1.10.4"
+        Configuration.version = "moesifwsgi-python/1.10.5"
         if self.settings.get("CAPTURE_OUTGOING_REQUESTS", False):
             StartCapture().start_capture_outgoing(self.settings)
 

@@ -4,7 +4,6 @@ import threading
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import atexit
 from moesifwsgi.logger_helper import LoggerHelper
 import logging
 
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 class Batcher(threading.Thread):
     """
     A class used for batching events. This runs in a single background thread,
-    and consumes events from the input queue, executes batch size and maximum 
+    and consumes events from the input queue, executes batch size and maximum
     wait time constraints and puts batches of events into the batch queue for
     the worker threads to consume.
     """
@@ -148,7 +147,7 @@ class BatchedWorkerPool:
             worker = Worker(self.batch_queue, self.api_client, self.config, self.debug)
             worker.start()
             self.workers.append(worker)
-    
+
     def add_event(self, event):
         # Add event to the event queue if it's not full
         # do not block and return immediately, True if successful, False if not
@@ -163,7 +162,7 @@ class BatchedWorkerPool:
         if self.batcher:
             self.batcher.stop()
             self.batcher.join()
-        
+
         for worker in self.workers:
             worker.stop()
 
@@ -188,8 +187,9 @@ class ConfigJobScheduler:
     def exit_config_job(self):
         try:
             # Shut down the scheduler
-            self.scheduler.remove_job('moesif_config_job')
-            self.scheduler.shutdown()
+            if self.scheduler and self.scheduler.running:
+                self.scheduler.remove_job('moesif_config_job')
+                self.scheduler.shutdown(wait=False)
         except Exception as ex:
             if self.DEBUG:
                 logger.info(f"Error during shut down of the config scheduler. {str(ex)}")
@@ -210,9 +210,6 @@ class ConfigJobScheduler:
                 # Avoid passing logging message to the ancestor loggers
                 logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
                 logging.getLogger('apscheduler.executors.default').propagate = False
-
-                # Exit handler when exiting the app
-                atexit.register(lambda: self.exit_config_job)
         except Exception as ex:
             if self.DEBUG:
                 logger.info(f"Error when scheduling the config job. {str(ex)}")
